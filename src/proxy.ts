@@ -36,12 +36,13 @@ export async function proxy(request: NextRequest) {
   const isAuthRoute = authRoutes.includes(pathname)
   const isPublicRoute = publicRoutes.includes(pathname)
 
+  // Unauthenticated users can only access public + auth pages
   if (!user && !isAuthRoute && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Authenticated users skip the auth forms and the marketing page
-  if (user && (isAuthRoute || pathname === '/')) {
+  // Logged-in users don't need the auth forms; send them to their feed
+  if (user && isAuthRoute) {
     return NextResponse.redirect(new URL('/feed', request.url))
   }
 

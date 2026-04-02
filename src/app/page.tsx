@@ -1,8 +1,12 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import HeroAuth from './HeroAuth'
+import { createClient } from '@/lib/supabase/server'
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   return (
     <div className="min-h-screen" style={{ background: 'var(--cc-surface)', fontFamily: 'Inter, system-ui, sans-serif' }}>
 
@@ -19,16 +23,26 @@ export default function LandingPage() {
               style={{ color: 'var(--cc-text-muted)' }}>
               About
             </Link>
-            <Link href="#auth"
-              className="text-sm font-medium hover:underline"
-              style={{ color: 'var(--cc-navy)' }}>
-              Sign in
-            </Link>
-            <Link href="#auth"
-              className="text-sm font-semibold px-4 py-2 rounded-lg text-white"
-              style={{ background: 'var(--cc-navy)' }}>
-              Join the network
-            </Link>
+            {user ? (
+              <Link href="/feed"
+                className="text-sm font-semibold px-4 py-2 rounded-lg text-white"
+                style={{ background: 'var(--cc-navy)' }}>
+                Go to your feed →
+              </Link>
+            ) : (
+              <>
+                <Link href="/login"
+                  className="text-sm font-medium hover:underline"
+                  style={{ color: 'var(--cc-navy)' }}>
+                  Sign in
+                </Link>
+                <Link href="/signup"
+                  className="text-sm font-semibold px-4 py-2 rounded-lg text-white"
+                  style={{ background: 'var(--cc-navy)' }}>
+                  Join the network
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -71,9 +85,39 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Right — auth card */}
+          {/* Right — auth card or dashboard CTA */}
           <div className="w-full max-w-sm mx-auto lg:mx-0 lg:ml-auto">
-            <HeroAuth />
+            {user ? (
+              <div className="rounded-2xl p-8 text-center"
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-2xl mx-auto mb-4">
+                  👋
+                </div>
+                <p className="text-white font-semibold text-lg mb-1">Welcome back!</p>
+                <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  Head over to your feed to catch up with the Viking network.
+                </p>
+                <Link href="/feed"
+                  className="block w-full py-3 rounded-xl text-sm font-semibold text-white text-center transition-opacity hover:opacity-90"
+                  style={{ background: 'var(--cc-gold)' }}>
+                  Go to your feed →
+                </Link>
+                <div className="flex gap-3 mt-3">
+                  <Link href="/profile"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-medium text-center transition-colors hover:bg-white/10"
+                    style={{ border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.75)' }}>
+                    My profile
+                  </Link>
+                  <Link href="/network"
+                    className="flex-1 py-2.5 rounded-xl text-sm font-medium text-center transition-colors hover:bg-white/10"
+                    style={{ border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.75)' }}>
+                    Network
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <HeroAuth />
+            )}
           </div>
         </div>
       </section>
@@ -228,11 +272,19 @@ export default function LandingPage() {
             Join Central Connect and become part of the most connected alumni network in Central Catholic history.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Link href="#auth"
-              className="px-7 py-3 rounded-lg font-semibold text-sm text-white transition-opacity hover:opacity-90"
-              style={{ background: 'var(--cc-gold)' }}>
-              Create your free profile
-            </Link>
+            {user ? (
+              <Link href="/feed"
+                className="px-7 py-3 rounded-lg font-semibold text-sm text-white transition-opacity hover:opacity-90"
+                style={{ background: 'var(--cc-gold)' }}>
+                Go to your feed →
+              </Link>
+            ) : (
+              <Link href="/signup"
+                className="px-7 py-3 rounded-lg font-semibold text-sm text-white transition-opacity hover:opacity-90"
+                style={{ background: 'var(--cc-gold)' }}>
+                Create your free profile
+              </Link>
+            )}
             <Link href="/about"
               className="px-7 py-3 rounded-lg font-semibold text-sm border border-white/30 text-white hover:bg-white/10 transition-colors">
               Learn more
