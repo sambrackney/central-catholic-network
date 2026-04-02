@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
+import GoogleButton from '@/components/ui/GoogleButton'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -32,11 +33,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
-      options: {
-        data: {
-          full_name: form.fullName,
-        },
-      },
+      options: { data: { full_name: form.fullName } },
     })
 
     if (error) {
@@ -45,8 +42,6 @@ export default function SignupPage() {
       return
     }
 
-    // Profile row is auto-created by the DB trigger (handle_new_user).
-    // Patch the extra fields the user filled in.
     const { data: { user } } = await supabase.auth.getUser()
     if (user) {
       await supabase.from('profiles').update({
@@ -67,10 +62,19 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--cc-surface)' }}>
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-6">
           <Image src="/cc-seal.png" alt="Central Catholic seal" width={64} height={64} className="mb-3" />
           <h1 className="text-2xl font-bold" style={{ color: 'var(--cc-navy)' }}>Create your account</h1>
           <p className="text-sm mt-1" style={{ color: 'var(--cc-text-muted)' }}>Central Connect · Central Catholic HS</p>
+        </div>
+
+        {/* Google OAuth — fastest path */}
+        <GoogleButton label="Sign up with Google" variant="light" />
+
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px" style={{ background: 'var(--cc-border)' }} />
+          <span className="text-xs font-medium" style={{ color: 'var(--cc-text-muted)' }}>or fill in your details</span>
+          <div className="flex-1 h-px" style={{ background: 'var(--cc-border)' }} />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -100,7 +104,9 @@ export default function SignupPage() {
               className={inputClass} style={{ borderColor: 'var(--cc-border)' }} placeholder="Pittsburgh, PA" />
           </div>
           <div>
-            <label className={labelClass}>Headline <span className="font-normal" style={{ color: 'var(--cc-text-muted)' }}>(optional)</span></label>
+            <label className={labelClass}>
+              Headline <span className="font-normal" style={{ color: 'var(--cc-text-muted)' }}>(optional)</span>
+            </label>
             <input type="text" value={form.headline} onChange={e => set('headline', e.target.value)}
               className={inputClass} style={{ borderColor: 'var(--cc-border)' }} placeholder="Short personal brand statement" />
           </div>
