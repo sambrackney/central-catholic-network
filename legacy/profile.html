@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My profile — Central Connect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="top-nav">
+      <div class="top-nav__inner">
+        <a href="index.html" class="brand brand--home">
+          <img
+            class="brand__logo"
+            src="cc-seal.png"
+            width="44"
+            height="44"
+            alt="Central Catholic High School seal — Pittsburgh, Pennsylvania"
+          />
+          <div class="brand__text">
+            <span class="brand__name">Central Connect</span>
+            <span class="brand__sub">Central Catholic High School Pittsburgh, PA</span>
+          </div>
+        </a>
+
+        <div class="search" role="search">
+          <label class="visually-hidden" for="global-search">Search alumni and posts</label>
+          <input
+            id="global-search"
+            type="search"
+            placeholder="Search alumni, classes, clubs…"
+            autocomplete="off"
+          />
+        </div>
+
+        <nav class="nav-icons" aria-label="Primary">
+          <p class="session-badge nav-session">
+            <span class="session-badge__label">Signed in</span>
+            <span class="session-badge__email" id="session-email"></span>
+          </p>
+          <a href="index.html" class="nav-icons__link" data-tooltip="Home">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Home</span>
+          </a>
+          <a href="#" class="nav-icons__link" data-tooltip="Network">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Network</span>
+          </a>
+          <a href="#" class="nav-icons__link" data-tooltip="Opportunities">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            <span>Opportunities</span>
+          </a>
+          <a href="#" class="nav-icons__link" data-tooltip="Messages">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Messages</span>
+          </a>
+          <a
+            href="profile.html"
+            class="nav-icons__avatar"
+            id="feed-nav-avatar"
+            aria-label="My profile"
+            aria-current="page"
+          >
+            <span class="nav-icons__avatar-ring">
+              <img
+                class="nav-icons__avatar-img"
+                id="feed-nav-avatar-img"
+                alt=""
+                referrerpolicy="no-referrer"
+                hidden
+              />
+              <span class="nav-icons__avatar-initials" id="feed-nav-avatar-initials">SB</span>
+            </span>
+          </a>
+          <button type="button" class="nav-logout js-logout">Log out</button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="profile-page" id="main">
+      <a href="index.html" class="profile-back">← Back to feed</a>
+
+      <p class="profile-page__eyebrow">My profile</p>
+
+      <article class="card profile-hero">
+        <div class="profile-hero__banner" role="presentation"></div>
+        <div class="profile-hero__main">
+          <div class="profile-hero__top">
+            <div class="profile-hero__photo" id="profile-photo" aria-hidden="true">
+              <img id="profile-photo-img" class="profile-hero__photo-img" hidden alt="" />
+              <span id="profile-photo-initials">SB</span>
+            </div>
+            <div class="profile-hero__actions">
+              <button type="button" class="btn btn--outline" id="edit-profile-btn">Edit profile</button>
+              <a class="btn btn--primary" href="#">Message</a>
+              <button type="button" class="btn btn--outline">Share profile</button>
+            </div>
+          </div>
+          <h1 class="profile-hero__title" id="profile-full-name">Sam Brackney</h1>
+          <p class="profile-hero__headline profile-hero__headline--brand" id="profile-brand-headline">
+            Student leader and Viking Ambassador building community at Central Catholic.
+          </p>
+          <p class="profile-hero__subline" id="profile-title-company">
+            Viking Ambassador · Central Catholic High School
+          </p>
+          <p class="profile-hero__grad" id="profile-grad-display">Class of 2025</p>
+          <p class="profile-hero__meta">
+            <span id="profile-location-display">Pittsburgh, Pennsylvania</span>
+            ·
+            <a href="https://www.centralcatholichs.com/" target="_blank" rel="noopener noreferrer">School website</a>
+          </p>
+          <p class="profile-hero__stats">
+            <span>248 connections</span>
+          </p>
+        </div>
+      </article>
+
+      <section class="card profile-section" aria-labelledby="about-heading">
+        <h2 class="profile-section__title" id="about-heading">About</h2>
+        <div id="profile-about">
+          <p class="profile-section__body">
+            I’m a senior at Central Catholic High School in Pittsburgh—the home of the Vikings. I care about
+            representing our school with integrity, whether I’m welcoming families as a Viking Ambassador,
+            supporting classmates, or taking on academic and extracurricular challenges with purpose.
+          </p>
+          <p class="profile-section__body">
+            Central Catholic has shaped how I think about leadership and service: showing up prepared,
+            treating people with respect, and giving back to the community that has invested in me. I’m
+            focused on finishing strong in my senior year while staying connected to alumni, faculty, and
+            peers through Central Connect.
+          </p>
+        </div>
+      </section>
+
+      <section class="card profile-section" aria-labelledby="edu-heading">
+        <h2 class="profile-section__title" id="edu-heading">Education</h2>
+
+        <div class="profile-edu-block">
+          <h3 class="profile-edu-block__title">High school</h3>
+          <div class="profile-edu">
+            <img
+              class="profile-edu__logo"
+              src="cc-seal.png"
+              width="56"
+              height="56"
+              alt=""
+            />
+            <div class="profile-edu-block__body">
+              <p class="profile-edu__name">Central Catholic High School</p>
+              <p class="profile-edu__grad-line" id="profile-hs-grad">Class of 2025</p>
+              <p class="profile-edu__static">Pittsburgh, Pennsylvania</p>
+              <div class="profile-hs-activities" id="profile-hs-activities-wrap">
+                <p class="profile-edu__detail-label">Clubs, activities, and sports</p>
+                <div id="profile-hs-activities" class="profile-edu__rich">
+                  Viking Ambassador program, campus visits and outreach, student leadership
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="profile-edu-block profile-edu-block--college" id="profile-college-section">
+          <h3 class="profile-edu-block__title">College / University</h3>
+          <div id="profile-college-body">
+            <p class="profile-edu__empty" id="profile-college-placeholder">
+              Add college or university details when you edit your profile.
+            </p>
+            <div id="profile-college-filled" hidden>
+              <div class="profile-edu profile-edu--college">
+                <img
+                  id="profile-college-logo"
+                  class="profile-edu__logo profile-college-logo"
+                  width="56"
+                  height="56"
+                  alt=""
+                  referrerpolicy="no-referrer"
+                  loading="lazy"
+                  hidden
+                />
+                <div class="profile-edu-block__body profile-college-title-wrap">
+                  <p class="profile-edu__name" id="profile-college-name"></p>
+                </div>
+              </div>
+              <div class="profile-college-sub" id="profile-college-degrees-wrap" hidden>
+                <p class="profile-edu__detail-label">Degrees</p>
+                <div class="profile-edu__rich" id="profile-college-degrees"></div>
+              </div>
+              <div class="profile-college-sub" id="profile-college-majors-wrap" hidden>
+                <p class="profile-edu__detail-label">Majors</p>
+                <div class="profile-edu__rich" id="profile-college-majors"></div>
+              </div>
+              <div class="profile-college-sub" id="profile-college-honors-wrap" hidden>
+                <p class="profile-edu__detail-label">Honors</p>
+                <div class="profile-edu__rich" id="profile-college-honors"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card profile-section" aria-labelledby="experience-heading">
+        <h2 class="profile-section__title" id="experience-heading">Experience &amp; involvement</h2>
+        <ul class="profile-list" id="profile-experience-list">
+          <li>
+            <strong>Viking Ambassador</strong> — Represent Central Catholic to prospective students and
+            families; lead tours, serve on panels, and answer questions about academics and student life.
+          </li>
+          <li>
+            <strong>School community</strong> — Collaborate with classmates and staff on events and
+            initiatives that build school spirit and support fellow Vikings.
+          </li>
+        </ul>
+      </section>
+
+      <section class="card profile-section" aria-labelledby="skills-heading">
+        <h2 class="profile-section__title" id="skills-heading">Skills &amp; interests</h2>
+        <div class="profile-chips" id="profile-skills-chips" role="list">
+          <span class="profile-chip" role="listitem">Public speaking</span>
+          <span class="profile-chip" role="listitem">Peer mentorship</span>
+          <span class="profile-chip" role="listitem">Organization &amp; planning</span>
+          <span class="profile-chip" role="listitem">School spirit &amp; engagement</span>
+          <span class="profile-chip" role="listitem">Writing</span>
+        </div>
+      </section>
+    </main>
+
+    <div
+      class="modal edit-profile-modal"
+      id="edit-profile-modal"
+      hidden
+      role="dialog"
+      aria-labelledby="edit-profile-title"
+      aria-modal="true"
+    >
+      <div class="modal__backdrop" data-close-edit></div>
+      <div class="modal__panel modal__panel--wide">
+        <header class="modal__header">
+          <h2 id="edit-profile-title" class="modal__title">Edit profile</h2>
+          <button type="button" class="modal__close" data-close-edit aria-label="Close">&times;</button>
+        </header>
+        <div class="edit-profile__body">
+          <h3 class="edit-section-heading edit-section-heading--first">Header section</h3>
+          <p class="edit-section-meta">Matches the top of your profile: name, photo, and headline area.</p>
+
+          <label class="edit-label" for="edit-full-name">Full name</label>
+          <input
+            class="edit-input"
+            type="text"
+            id="edit-full-name"
+            name="fullName"
+            autocomplete="name"
+          />
+
+          <fieldset class="edit-fieldset">
+            <legend class="edit-label">Profile photo</legend>
+            <div class="edit-photo-row">
+              <img id="edit-photo-preview" class="edit-photo-preview" hidden alt="Preview" />
+              <div class="edit-photo-fields">
+                <label class="edit-file-label">
+                  <input type="file" name="photo" accept="image/*" class="edit-file-input" />
+                  <span class="btn btn--outline edit-file-btn">Choose image</span>
+                </label>
+                <label class="edit-checkbox-label">
+                  <input type="checkbox" name="clearPhoto" />
+                  Remove photo (use initials)
+                </label>
+              </div>
+            </div>
+          </fieldset>
+
+          <label class="edit-label" for="edit-title-company">Current title + company</label>
+          <input
+            class="edit-input"
+            type="text"
+            id="edit-title-company"
+            name="titleCompany"
+            placeholder="e.g. Viking Ambassador · Central Catholic High School"
+            autocomplete="organization-title"
+          />
+
+          <label class="edit-label" for="edit-location">Location</label>
+          <input class="edit-input" type="text" id="edit-location" name="location" autocomplete="address-level2" />
+
+          <label class="edit-label" for="edit-headline">Headline</label>
+          <p class="edit-hint edit-hint--tight">Short personal brand statement</p>
+          <input
+            class="edit-input"
+            type="text"
+            id="edit-headline"
+            name="headline"
+            autocomplete="off"
+          />
+
+          <label class="edit-label" for="edit-about">About</label>
+          <p class="edit-hint">
+            Write a brief personal summary including your career interests, and if applicable your
+            willingness to mentor and connect with other alumni.
+          </p>
+          <textarea class="edit-textarea" id="edit-about" name="about" rows="8"></textarea>
+
+          <h3 class="edit-section-heading">Education</h3>
+
+          <h4 class="edit-subheading">High school</h4>
+          <p class="edit-static-school">Central Catholic High School</p>
+          <p class="edit-hint edit-hint--tight">School is set for all Central Connect profiles.</p>
+
+          <label class="edit-label" for="edit-grad-year-edu">Graduation year</label>
+          <input
+            class="edit-input"
+            type="text"
+            id="edit-grad-year-edu"
+            name="graduationYear"
+            inputmode="numeric"
+            placeholder="e.g. 2025"
+            autocomplete="off"
+          />
+
+          <label class="edit-label" for="edit-hs-activities">Clubs, activities, and sports</label>
+          <textarea
+            class="edit-textarea edit-textarea--sm"
+            id="edit-hs-activities"
+            name="hsActivities"
+            rows="4"
+          ></textarea>
+
+          <h4 class="edit-subheading">College / University</h4>
+
+          <label class="edit-label" for="edit-college-name">College or university name</label>
+          <input class="edit-input" type="text" id="edit-college-name" name="collegeName" autocomplete="off" />
+
+          <label class="edit-label" for="edit-college-website">College website</label>
+          <p class="edit-hint edit-hint--tight">
+            Enter the school’s main website (e.g. <kbd>pitt.edu</kbd> or <kbd>https://www.cmu.edu</kbd>) to show its
+            logo next to the title.
+          </p>
+          <input
+            class="edit-input"
+            type="text"
+            inputmode="url"
+            id="edit-college-website"
+            name="collegeWebsite"
+            placeholder="e.g. www.pitt.edu"
+            autocomplete="off"
+          />
+
+          <label class="edit-label" for="edit-college-degrees">Degrees</label>
+          <textarea class="edit-textarea edit-textarea--sm" id="edit-college-degrees" name="collegeDegrees" rows="3"></textarea>
+
+          <label class="edit-label" for="edit-college-majors">Majors</label>
+          <textarea class="edit-textarea edit-textarea--sm" id="edit-college-majors" name="collegeMajors" rows="3"></textarea>
+
+          <label class="edit-label" for="edit-college-honors">Honors</label>
+          <textarea class="edit-textarea edit-textarea--sm" id="edit-college-honors" name="collegeHonors" rows="3"></textarea>
+
+          <label class="edit-label" for="edit-experience">Experience &amp; involvement</label>
+          <p class="edit-hint">
+            One bullet per line. Optional format: <strong>Title</strong> — description (use a space, em dash,
+            space).
+          </p>
+          <textarea class="edit-textarea" id="edit-experience" name="experience" rows="6"></textarea>
+
+          <label class="edit-label" for="edit-skills">Skills &amp; interests</label>
+          <p class="edit-hint">One per line, or separate with commas.</p>
+          <textarea class="edit-textarea edit-textarea--sm" id="edit-skills" name="skills" rows="5"></textarea>
+        </div>
+        <footer class="modal__footer">
+          <button type="button" class="btn btn--ghost" data-close-edit>Cancel</button>
+          <button type="button" class="btn btn--primary" id="edit-profile-save">Save</button>
+        </footer>
+      </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="profile-fields.js"></script>
+    <script src="profile.js"></script>
+  </body>
+</html>
