@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Home — Central Connect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="top-nav">
+      <div class="top-nav__inner">
+        <a href="index.html" class="brand brand--home">
+          <img
+            class="brand__logo"
+            src="cc-seal.png"
+            width="44"
+            height="44"
+            alt="Central Catholic High School seal — Pittsburgh, Pennsylvania"
+          />
+          <div class="brand__text">
+            <span class="brand__name">Central Connect</span>
+            <span class="brand__sub">Central Catholic High School Pittsburgh, PA</span>
+          </div>
+        </a>
+
+        <div class="search" role="search">
+          <label class="visually-hidden" for="global-search">Search alumni and posts</label>
+          <input
+            id="global-search"
+            type="search"
+            placeholder="Search alumni, classes, clubs…"
+            autocomplete="off"
+          />
+        </div>
+
+        <nav class="nav-icons" aria-label="Primary">
+          <p class="session-badge nav-session">
+            <span class="session-badge__label">Signed in</span>
+            <span class="session-badge__email" id="session-email"></span>
+          </p>
+          <a href="index.html" class="nav-icons__link nav-icons__link--active" data-tooltip="Home">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Home</span>
+          </a>
+          <a href="#" class="nav-icons__link" data-tooltip="Network">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Network</span>
+          </a>
+          <a href="#" class="nav-icons__link" data-tooltip="Opportunities">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            <span>Opportunities</span>
+          </a>
+          <a href="#" class="nav-icons__link" data-tooltip="Messages">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Messages</span>
+          </a>
+          <a
+            href="profile.html"
+            class="nav-icons__avatar"
+            id="feed-nav-avatar"
+            aria-label="View your profile"
+            data-tooltip="Your profile"
+          >
+            <span class="nav-icons__avatar-ring">
+              <img
+                class="nav-icons__avatar-img"
+                id="feed-nav-avatar-img"
+                alt=""
+                referrerpolicy="no-referrer"
+                hidden
+              />
+              <span class="nav-icons__avatar-initials" id="feed-nav-avatar-initials">SB</span>
+            </span>
+          </a>
+          <button type="button" class="nav-logout js-logout">Log out</button>
+        </nav>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="rail rail--left" aria-label="Your profile">
+        <article class="card profile-card">
+          <div class="profile-card__banner"></div>
+          <div class="profile-card__body">
+            <a
+              href="profile.html"
+              class="profile-card__photo profile-card__photo--link"
+              id="feed-card-photo"
+              aria-label="View your full profile"
+            >
+              <img
+                class="profile-card__photo-img"
+                id="feed-card-photo-img"
+                alt=""
+                referrerpolicy="no-referrer"
+                hidden
+              />
+              <span class="profile-card__photo-initials" id="feed-card-photo-initials">—</span>
+            </a>
+            <h2 class="profile-card__name" id="feed-card-name"></h2>
+            <p class="profile-card__brand" id="feed-card-brand-headline" hidden></p>
+            <p class="profile-card__subline" id="feed-card-title-company" hidden></p>
+            <p class="profile-card__grad" id="feed-card-grad"></p>
+            <p class="profile-card__meta" id="feed-card-meta">
+              <span id="feed-card-location-display"></span>
+              <span id="feed-card-meta-sep" hidden> · </span>
+              <a
+                href="https://www.centralcatholichs.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="profile-card__meta-link"
+                >School website</a>
+            </p>
+
+            <div class="profile-card__extras" id="feed-card-about-block" hidden>
+              <h3 class="profile-card__extras-title">About</h3>
+              <p class="profile-card__extras-text" id="feed-card-about-preview"></p>
+            </div>
+
+            <div class="profile-card__extras">
+              <h3 class="profile-card__extras-title">Education</h3>
+              <p class="profile-card__extras-strong">Central Catholic High School</p>
+              <p class="profile-card__extras-text" id="feed-card-edu-class"></p>
+              <div id="feed-card-hs-act-wrap" hidden>
+                <p class="profile-card__extras-label">Clubs, activities, and sports</p>
+                <p class="profile-card__extras-text" id="feed-card-hs-activities"></p>
+              </div>
+              <div id="feed-card-college-wrap" hidden>
+                <p class="profile-card__extras-label">College / University</p>
+                <p class="profile-card__extras-strong" id="feed-card-college-name"></p>
+              </div>
+            </div>
+
+            <a href="profile.html" class="profile-card__link">View full profile</a>
+          </div>
+        </article>
+
+        <nav class="card quick-links" aria-label="Shortcuts">
+          <h3 class="quick-links__title">Shortcuts</h3>
+          <ul>
+            <li><a href="#">Alumni Directory</a></li>
+            <li><a href="#">Athletics &amp; Booster Club</a></li>
+            <li><a href="#">Guidance &amp; College Counseling</a></li>
+            <li><a href="#">Give to Central</a></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <main class="feed" id="main">
+        <section class="card composer" aria-label="Write a career or internship update">
+          <div class="composer__row">
+            <div class="composer__avatar" aria-hidden="true">
+              <img
+                class="composer__avatar-img"
+                id="feed-composer-avatar-img"
+                alt=""
+                referrerpolicy="no-referrer"
+                hidden
+              />
+              <span class="composer__avatar-initials" id="feed-composer-avatar-initials">SB</span>
+            </div>
+            <button type="button" class="composer__trigger" id="open-composer">
+              Share a career update, internship, or milestone…
+            </button>
+          </div>
+          <div class="composer__actions">
+            <button type="button" class="composer__action"><span class="composer__icon composer__icon--photo"></span> Photo</button>
+            <button type="button" class="composer__action"><span class="composer__icon composer__icon--event"></span> Event</button>
+            <button type="button" class="composer__action"><span class="composer__icon composer__icon--article"></span> Article</button>
+          </div>
+        </section>
+
+        <p class="feed__intro">
+          Your personal blog for career news—saved to this account only.
+        </p>
+
+        <section class="posts" id="posts" aria-label="Your career and internship updates">
+          <!-- Posts injected by app.js -->
+        </section>
+      </main>
+
+      <aside class="rail rail--right" aria-label="News and suggestions">
+        <section class="card news-card">
+          <h3 class="news-card__title">Central news</h3>
+          <ul class="news-card__list" id="news-list">
+            <!-- News items from app.js -->
+          </ul>
+          <a href="https://www.centralcatholichs.com/" class="news-card__footer" target="_blank" rel="noopener noreferrer">See all at centralcatholichs.com</a>
+        </section>
+
+        <section class="card suggest-card">
+          <h3 class="suggest-card__title">People you may know</h3>
+          <ul class="suggest-card__list" id="suggestions-list">
+            <!-- Suggestions from app.js -->
+          </ul>
+        </section>
+
+        <footer class="footer-links">
+          <a href="#">About</a>
+          <a href="#">Accessibility</a>
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <p class="footer-links__brand">Central Connect · Unofficial demo layout</p>
+        </footer>
+      </aside>
+    </div>
+
+    <div class="modal" id="composer-modal" hidden role="dialog" aria-labelledby="composer-modal-title" aria-modal="true">
+      <div class="modal__backdrop" data-close-modal></div>
+      <div class="modal__panel">
+        <header class="modal__header">
+          <h2 id="composer-modal-title" class="modal__title">New career update</h2>
+          <button type="button" class="modal__close" data-close-modal aria-label="Close">&times;</button>
+        </header>
+        <div class="modal__author">
+          <div class="modal__avatar" aria-hidden="true">
+            <img
+              class="modal__avatar-img"
+              id="feed-modal-avatar-img"
+              alt=""
+              referrerpolicy="no-referrer"
+              hidden
+            />
+            <span class="modal__avatar-initials" id="feed-modal-avatar-initials">SB</span>
+          </div>
+          <div>
+            <p class="modal__name" id="feed-modal-name">Sam Brackney</p>
+            <button type="button" class="modal__visibility">Anyone at Central</button>
+          </div>
+        </div>
+        <label class="visually-hidden" for="post-body">Post text</label>
+        <textarea
+          id="post-body"
+          class="modal__textarea"
+          rows="6"
+          placeholder="Internship highlights, new role, grad school, certifications, volunteer work, job search wins—anything you want to log on your feed."
+        ></textarea>
+        <footer class="modal__footer">
+          <button type="button" class="btn btn--ghost" data-close-modal>Cancel</button>
+          <button type="button" class="btn btn--primary" id="submit-post">Post</button>
+        </footer>
+      </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="profile-fields.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
