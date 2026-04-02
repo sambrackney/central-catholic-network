@@ -32,20 +32,16 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const authRoutes = ['/login', '/signup']
+  const publicRoutes = ['/', '/about']
   const isAuthRoute = authRoutes.includes(pathname)
+  const isPublicRoute = publicRoutes.includes(pathname)
 
-  if (!user && !isAuthRoute && pathname !== '/') {
+  if (!user && !isAuthRoute && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
   if (user && isAuthRoute) {
     return NextResponse.redirect(new URL('/feed', request.url))
-  }
-
-  if (pathname === '/') {
-    return NextResponse.redirect(
-      new URL(user ? '/feed' : '/login', request.url)
-    )
   }
 
   return supabaseResponse
