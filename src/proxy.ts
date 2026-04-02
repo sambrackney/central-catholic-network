@@ -40,7 +40,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && isAuthRoute) {
+  // Authenticated users skip the auth forms and the marketing page
+  if (user && (isAuthRoute || pathname === '/')) {
     return NextResponse.redirect(new URL('/feed', request.url))
   }
 
