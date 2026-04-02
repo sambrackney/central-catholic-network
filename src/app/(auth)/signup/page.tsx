@@ -71,10 +71,15 @@ export default function SignupPage() {
     setError('')
     setLoading(true)
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: {
+          full_name: fullName,
+          graduation_year: gradYear ? parseInt(gradYear) : null,
+        },
+      },
     })
 
     if (signUpError) {
@@ -83,17 +88,24 @@ export default function SignupPage() {
       return
     }
 
-    // Patch the profile row created by the DB trigger
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('profiles').update({
+    // Use the user returned directly from signUp — don't call getUser() separately,
+    // as the session may not be established yet if email confirmation is required.
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
         full_name: fullName,
         graduation_year: gradYear ? parseInt(gradYear) : null,
-      }).eq('id', user.id)
+      })
     }
 
-    router.push('/feed')
-    router.refresh()
+    // If Supabase issued a session immediately (email confirmation disabled) → go to feed.
+    // Otherwise the user needs to confirm their email first → send to login with a notice.
+    if (data.session) {
+      router.push('/feed')
+      router.refresh()
+    } else {
+      router.push('/login?notice=confirm-email')
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {

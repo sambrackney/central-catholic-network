@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import HeroAuth from './HeroAuth'
 import { createClient } from '@/lib/supabase/server'
 
 export default async function LandingPage() {
@@ -49,75 +48,62 @@ export default async function LandingPage() {
 
       {/* ── HERO ── */}
       <section
-        id="auth"
-        className="relative overflow-hidden"
+        className="relative overflow-hidden text-center"
         style={{ background: 'linear-gradient(160deg, var(--cc-navy) 0%, #0f1a30 55%, #1a2a4e 100%)' }}
       >
         {/* Decorative gold glow */}
         <div
-          className="absolute -bottom-40 -right-40 w-[700px] h-[700px] rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.12) 0%, transparent 65%)' }}
+          className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(201,162,39,0.10) 0%, transparent 65%)' }}
         />
 
-        <div className="relative max-w-6xl mx-auto px-6 py-20 md:py-28 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-
-          {/* Left — copy */}
-          <div className="text-white">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-6"
-              style={{ background: 'rgba(201,162,39,0.18)', color: '#e8c050', border: '1px solid rgba(201,162,39,0.3)' }}>
-              Central Catholic High School · Pittsburgh, PA
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-5">
-              Where Vikings<br />
-              <span style={{ color: '#e8c050' }}>Stay Connected</span>
-            </h1>
-            <p className="text-base leading-relaxed mb-8 max-w-md" style={{ color: 'rgba(255,255,255,0.72)' }}>
-              The alumni network built for the Central Catholic brotherhood —
-              linking every class, every era, and every Viking who ever walked
-              through those doors on 5th Avenue.
-            </p>
-
-            <div className="hidden lg:flex items-center gap-3 mt-6">
-              <Image src="/cc-seal.png" alt="seal" width={40} height={40} className="opacity-50" />
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                Central Catholic High School · Est. 1927
-              </p>
-            </div>
+        <div className="relative max-w-3xl mx-auto px-6 py-24 md:py-36">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-7"
+            style={{ background: 'rgba(201,162,39,0.18)', color: '#e8c050', border: '1px solid rgba(201,162,39,0.3)' }}>
+            Central Catholic High School · Pittsburgh, PA
           </div>
 
-          {/* Right — auth card or dashboard CTA */}
-          <div className="w-full max-w-sm mx-auto lg:mx-0 lg:ml-auto">
-            {user ? (
-              <div className="rounded-2xl p-8 text-center"
-                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center text-2xl mx-auto mb-4">
-                  👋
-                </div>
-                <p className="text-white font-semibold text-lg mb-1">Welcome back!</p>
-                <p className="text-sm mb-6" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                  Head over to your feed to catch up with the Viking network.
-                </p>
-                <Link href="/feed"
-                  className="block w-full py-3 rounded-xl text-sm font-semibold text-white text-center transition-opacity hover:opacity-90"
-                  style={{ background: 'var(--cc-gold)' }}>
-                  Go to your feed →
-                </Link>
-                <div className="flex gap-3 mt-3">
-                  <Link href="/profile"
-                    className="flex-1 py-2.5 rounded-xl text-sm font-medium text-center transition-colors hover:bg-white/10"
-                    style={{ border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.75)' }}>
-                    My profile
-                  </Link>
-                  <Link href="/network"
-                    className="flex-1 py-2.5 rounded-xl text-sm font-medium text-center transition-colors hover:bg-white/10"
-                    style={{ border: '1px solid rgba(255,255,255,0.2)', color: 'rgba(255,255,255,0.75)' }}>
-                    Network
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <HeroAuth />
-            )}
+          <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-6 text-white">
+            Where Vikings<br />
+            <span style={{ color: '#e8c050' }}>Stay Connected</span>
+          </h1>
+
+          <p className="text-base md:text-lg leading-relaxed mb-10 max-w-xl mx-auto"
+            style={{ color: 'rgba(255,255,255,0.68)' }}>
+            The alumni network built for the Central Catholic brotherhood —
+            linking every class, every era, and every Viking who ever walked
+            through those doors on 5th Avenue.
+          </p>
+
+          {user ? (
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="/feed"
+                className="px-8 py-3.5 rounded-xl font-semibold text-sm text-white transition-opacity hover:opacity-90"
+                style={{ background: 'var(--cc-gold)' }}>
+                Go to your feed →
+              </Link>
+              <Link href="/profile"
+                className="px-8 py-3.5 rounded-xl font-semibold text-sm border border-white/25 text-white hover:bg-white/10 transition-colors">
+                My profile
+              </Link>
+            </div>
+          ) : (
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="/signup"
+                className="px-8 py-3.5 rounded-xl font-semibold text-sm text-white transition-opacity hover:opacity-90"
+                style={{ background: 'var(--cc-gold)' }}>
+                Join the network — it's free
+              </Link>
+              <Link href="/login"
+                className="px-8 py-3.5 rounded-xl font-semibold text-sm border border-white/25 text-white hover:bg-white/10 transition-colors">
+                Sign in
+              </Link>
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-3 mt-12 opacity-40">
+            <Image src="/cc-seal.png" alt="seal" width={28} height={28} />
+            <p className="text-xs text-white">Central Catholic High School · Est. 1927</p>
           </div>
         </div>
       </section>

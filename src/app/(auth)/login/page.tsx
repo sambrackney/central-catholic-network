@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import GoogleButton from '@/components/ui/GoogleButton'
 
-export default function LoginPage() {
-  const router   = useRouter()
-  const supabase = createClient()
+function LoginForm() {
+  const router       = useRouter()
+  const searchParams = useSearchParams()
+  const notice       = searchParams.get('notice')
+  const supabase     = createClient()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState('')
@@ -30,15 +32,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
-      style={{ background: 'var(--cc-surface)' }}>
-
-      {/* Logo */}
-      <Link href="/" className="flex items-center gap-2.5 mb-10">
-        <Image src="/cc-seal.png" alt="Central Catholic seal" width={36} height={36} />
-        <span className="text-base font-bold" style={{ color: 'var(--cc-navy)' }}>Central Connect</span>
-      </Link>
-
+    <>
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border p-8"
         style={{ borderColor: 'var(--cc-border)' }}>
 
@@ -48,6 +42,16 @@ export default function LoginPage() {
             Sign in to your Central Connect account
           </p>
         </div>
+
+        {notice === 'confirm-email' && (
+          <div className="mb-5 px-4 py-3 rounded-xl text-sm border"
+            style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' }}>
+            <p className="font-semibold mb-0.5">Check your email</p>
+            <p className="text-xs" style={{ color: '#15803d' }}>
+              We sent a confirmation link to your inbox. Click it to activate your account, then sign in here.
+            </p>
+          </div>
+        )}
 
         {/* Google — primary CTA */}
         <GoogleButton label="Continue with Google" variant="light" />
@@ -99,6 +103,24 @@ export default function LoginPage() {
           Create one
         </Link>
       </p>
+    </>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+      style={{ background: 'var(--cc-surface)' }}>
+
+      {/* Logo */}
+      <Link href="/" className="flex items-center gap-2.5 mb-10">
+        <Image src="/cc-seal.png" alt="Central Catholic seal" width={36} height={36} />
+        <span className="text-base font-bold" style={{ color: 'var(--cc-navy)' }}>Central Connect</span>
+      </Link>
+
+      <Suspense fallback={<div className="w-full max-w-sm h-80 bg-white rounded-2xl border animate-pulse" style={{ borderColor: 'var(--cc-border)' }} />}>
+        <LoginForm />
+      </Suspense>
     </div>
   )
 }
