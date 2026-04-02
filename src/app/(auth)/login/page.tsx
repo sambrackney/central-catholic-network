@@ -8,12 +8,12 @@ import { createClient } from '@/lib/supabase/client'
 import GoogleButton from '@/components/ui/GoogleButton'
 
 export default function LoginPage() {
-  const router = useRouter()
+  const router   = useRouter()
   const supabase = createClient()
-  const [email, setEmail] = useState('')
+  const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [error, setError]       = useState('')
+  const [loading, setLoading]   = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -30,64 +30,75 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--cc-surface)' }}>
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-        <div className="flex flex-col items-center mb-8">
-          <Image src="/cc-seal.png" alt="Central Catholic seal" width={68} height={68} className="mb-4" />
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--cc-navy)' }}>Central Connect</h1>
-          <p className="text-sm mt-1 text-center" style={{ color: 'var(--cc-text-muted)' }}>
-            Alumni &amp; student network · Central Catholic High School
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+      style={{ background: 'var(--cc-surface)' }}>
+
+      {/* Logo */}
+      <Link href="/" className="flex items-center gap-2.5 mb-10">
+        <Image src="/cc-seal.png" alt="Central Catholic seal" width={36} height={36} />
+        <span className="text-base font-bold" style={{ color: 'var(--cc-navy)' }}>Central Connect</span>
+      </Link>
+
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border p-8"
+        style={{ borderColor: 'var(--cc-border)' }}>
+
+        <div className="text-center mb-7">
+          <h1 className="text-xl font-bold" style={{ color: 'var(--cc-navy)' }}>Welcome back</h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--cc-text-muted)' }}>
+            Sign in to your Central Connect account
           </p>
         </div>
 
-        {/* Google OAuth */}
-        <GoogleButton label="Sign in with Google" variant="light" />
+        {/* Google — primary CTA */}
+        <GoogleButton label="Continue with Google" variant="light" />
 
         {/* Divider */}
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px" style={{ background: 'var(--cc-border)' }} />
-          <span className="text-xs font-medium" style={{ color: 'var(--cc-text-muted)' }}>or continue with email</span>
+          <span className="text-xs font-medium" style={{ color: 'var(--cc-text-muted)' }}>or sign in with email</span>
           <div className="flex-1 h-px" style={{ background: 'var(--cc-border)' }} />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--cc-text)' }}>Email</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--cc-text)' }}>Email</label>
             <input
-              type="email" required value={email} onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-gold)]"
+              type="email" required value={email}
+              onChange={e => { setEmail(e.target.value); setError('') }}
+              placeholder="you@example.com" autoComplete="email"
+              className="w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-navy)] transition-shadow"
               style={{ borderColor: 'var(--cc-border)' }}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--cc-text)' }}>Password</label>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--cc-text)' }}>Password</label>
             <input
-              type="password" required value={password} onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-gold)]"
+              type="password" required value={password}
+              onChange={e => { setPassword(e.target.value); setError('') }}
+              placeholder="••••••••" autoComplete="current-password"
+              className="w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-navy)] transition-shadow"
               style={{ borderColor: 'var(--cc-border)' }}
             />
           </div>
 
           {error && (
-            <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
           )}
 
           <button type="submit" disabled={loading}
-            className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+            className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 mt-1"
             style={{ background: 'var(--cc-navy)' }}>
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-
-        <p className="text-center text-sm mt-6" style={{ color: 'var(--cc-text-muted)' }}>
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-semibold hover:underline" style={{ color: 'var(--cc-gold)' }}>
-            Create one
-          </Link>
-        </p>
       </div>
+
+      <p className="text-center text-sm mt-6" style={{ color: 'var(--cc-text-muted)' }}>
+        Don&apos;t have an account?{' '}
+        <Link href="/signup" className="font-semibold hover:underline" style={{ color: 'var(--cc-navy)' }}>
+          Create one
+        </Link>
+      </p>
     </div>
   )
 }
