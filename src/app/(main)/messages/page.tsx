@@ -59,8 +59,8 @@ export default function MessagesPage() {
     name: '', description: '', chat_type: 'general' as ChatType,
   })
   const [gcMemberSearch, setGcMemberSearch] = useState('')
-  const [gcMemberResults, setGcMemberResults] = useState<Profile[]>([])
-  const [gcMembers, setGcMembers] = useState<Profile[]>([])
+  const [gcMemberResults, setGcMemberResults] = useState<Pick<Profile, 'id' | 'full_name' | 'photo_url' | 'graduation_year' | 'title_company'>[]>([])
+  const [gcMembers, setGcMembers] = useState<Pick<Profile, 'id' | 'full_name' | 'photo_url' | 'graduation_year' | 'title_company'>[]>([])
   const [gcSearching, setGcSearching] = useState(false)
   const [gcCreating, setGcCreating] = useState(false)
   const [gcError, setGcError] = useState('')
