@@ -50,7 +50,7 @@ export default function MessagesPage() {
   // ── New DM modal state ─────────────────────────────────────────────────
   const [dmOpen, setDmOpen] = useState(false)
   const [dmSearch, setDmSearch] = useState('')
-  const [dmResults, setDmResults] = useState<Profile[]>([])
+  const [dmResults, setDmResults] = useState<Pick<Profile, 'id' | 'full_name' | 'photo_url' | 'graduation_year' | 'title_company'>[]>([])
   const [dmSearching, setDmSearching] = useState(false)
 
   // ── Create group chat modal state ─────────────────────────────────────
