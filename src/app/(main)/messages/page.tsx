@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -10,6 +10,7 @@ import type { Database } from '@/types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type ChatType = Database['public']['Enums']['chat_type']
+type RealtimeChannel = ReturnType<ReturnType<typeof createClient>['channel']>
 
 interface Conversation {
   profile: Profile
@@ -40,12 +41,14 @@ const CHAT_TYPE_LABELS: Record<ChatType, string> = {
 const POLL_INTERVAL_MS = 20_000 // refresh conversations every 20 s
 
 export default function MessagesPage() {
-  const supabase = createClient()
+  // Stable client — avoids recreating subscriptions on every render
+  const supabase = useMemo(() => createClient(), [])
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [groupChats, setGroupChats] = useState<GroupChat[]>([])
   const [loading, setLoading] = useState(true)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   // ── New DM modal state ─────────────────────────────────────────────────
   const [dmOpen, setDmOpen] = useState(false)
@@ -133,11 +136,13 @@ export default function MessagesPage() {
   }, [supabase])
 
   useEffect(() => {
+    let mounted = true
+
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
+      if (!user || !mounted) return
       setCurrentUserId(user.id)
       await Promise.all([loadConversations(user.id), loadGroupChats(user.id)])
-      setLoading(false)
+      if (mounted) setLoading(false)
 
       // Realtime: new DM arrives → refresh conversation list
       const channel = supabase
@@ -145,23 +150,29 @@ export default function MessagesPage() {
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'direct_messages',
           filter: `recipient_id=eq.${user.id}`,
-        }, () => loadConversations(user.id))
+        }, () => { if (mounted) loadConversations(user.id) })
         .subscribe()
+
+      channelRef.current = channel
 
       // Polling fallback for sent messages updating order
       pollRef.current = setInterval(() => {
+        if (!mounted) return
         loadConversations(user.id)
         loadGroupChats(user.id)
       }, POLL_INTERVAL_MS)
-
-      return () => {
-        supabase.removeChannel(channel)
-        if (pollRef.current) clearInterval(pollRef.current)
-      }
     })
 
     return () => {
-      if (pollRef.current) clearInterval(pollRef.current)
+      mounted = false
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
+      if (pollRef.current) {
+        clearInterval(pollRef.current)
+        pollRef.current = null
+      }
     }
   }, [supabase, loadConversations, loadGroupChats])
 

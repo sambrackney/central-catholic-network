@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
@@ -12,8 +12,8 @@ import type { Database } from '@/types/database.types'
 type GroupMessage = Database['public']['Tables']['group_messages']['Row'] & {
   profiles: Pick<Database['public']['Tables']['profiles']['Row'], 'id' | 'full_name' | 'photo_url'>
 }
-
 type GroupChat = Database['public']['Tables']['group_chats']['Row']
+type RealtimeChannel = ReturnType<ReturnType<typeof createClient>['channel']>
 
 const MAX_LENGTH = LIMITS.MESSAGE
 
@@ -21,7 +21,9 @@ export default function GroupChatPage() {
   const params = useParams<{ id: string }>()
   const chatId = params.id
 
-  const supabase = createClient()
+  // Stable client reference to prevent hook re-subscriptions on every render
+  const supabase = useMemo(() => createClient(), [])
+
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [chat, setChat] = useState<GroupChat | null>(null)
   const [messages, setMessages] = useState<GroupMessage[]>([])
@@ -32,6 +34,7 @@ export default function GroupChatPage() {
   const [loading, setLoading] = useState(true)
   const [memberCount, setMemberCount] = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
   const validChat = isValidUUID(chatId)
 
@@ -50,49 +53,55 @@ export default function GroupChatPage() {
 
   useEffect(() => {
     if (!validChat) return
+    let mounted = true
 
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
+      if (!user || !mounted) return
       setCurrentUserId(user.id)
 
-      // Load chat info
       const { data: chatData } = await supabase
         .from('group_chats')
         .select('*')
         .eq('id', chatId)
         .single()
-      setChat(chatData)
+      if (mounted) setChat(chatData)
 
-      // Check membership
       const { data: membership } = await supabase
         .from('group_chat_members')
         .select('profile_id')
         .eq('chat_id', chatId)
         .eq('profile_id', user.id)
         .maybeSingle()
-      setIsMember(Boolean(membership))
+      if (mounted) setIsMember(Boolean(membership))
 
-      // Get member count
       const { count } = await supabase
         .from('group_chat_members')
         .select('profile_id', { count: 'exact', head: true })
         .eq('chat_id', chatId)
-      setMemberCount(count ?? 0)
+      if (mounted) setMemberCount(count ?? 0)
 
       await fetchMessages()
-      setLoading(false)
+      if (mounted) setLoading(false)
 
-      // Realtime subscription — group messages for this chat
+      // Subscribe — stored in ref so the outer cleanup can remove it
       const channel = supabase
         .channel(`group-${chatId}`)
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'group_messages',
           filter: `chat_id=eq.${chatId}`,
-        }, () => fetchMessages())
+        }, () => { if (mounted) fetchMessages() })
         .subscribe()
 
-      return () => { supabase.removeChannel(channel) }
+      channelRef.current = channel
     })
+
+    return () => {
+      mounted = false
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
+    }
   }, [supabase, chatId, fetchMessages, validChat])
 
   useEffect(() => { scrollToBottom() }, [messages])
@@ -209,7 +218,6 @@ export default function GroupChatPage() {
           const showSender = !isMine && prevMsg?.sender_id !== msg.sender_id
           return (
             <div key={msg.id} className={`flex gap-2 ${isMine ? 'flex-row-reverse' : ''}`}>
-              {/* Avatar: show for others when sender changes */}
               {!isMine && (
                 <div className="shrink-0 w-8 flex flex-col justify-end">
                   {showSender && (

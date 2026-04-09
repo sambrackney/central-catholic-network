@@ -23,14 +23,33 @@ const variants = {
   exit:  (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
 }
 
+// Human-readable messages for common Supabase auth errors
+function friendlyAuthError(message: string): string {
+  const m = message.toLowerCase()
+  if (m.includes('rate limit') || m.includes('429') || m.includes('too many'))
+    return 'Too many signup attempts. Please wait a few minutes before trying again.'
+  if (m.includes('already registered') || m.includes('already exists') || m.includes('unique'))
+    return 'An account with that email already exists. Try signing in instead.'
+  if (m.includes('invalid email'))
+    return 'Please enter a valid email address.'
+  if (m.includes('password'))
+    return 'Password is too weak. Please use at least 6 characters.'
+  if (m.includes('network') || m.includes('fetch'))
+    return 'Network error. Please check your connection and try again.'
+  return message
+}
+
 export default function SignupPage() {
   const router  = useRouter()
   const supabase = createClient()
 
-  const [step, setStep]       = useState(0)
-  const [dir,  setDir]        = useState(1)       // 1 = forward, -1 = back
-  const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
+  const [step, setStep]             = useState(0)
+  const [dir,  setDir]              = useState(1)       // 1 = forward, -1 = back
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState('')
+  // Cooldown prevents hammering the submit button after a rate-limit error
+  const [cooldown, setCooldown]     = useState(0)
+  const cooldownRef                 = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [fullName, setFullName]     = useState('')
   const [email, setEmail]           = useState('')
@@ -44,6 +63,25 @@ export default function SignupPage() {
     const t = setTimeout(() => inputRef.current?.focus(), 250)
     return () => clearTimeout(t)
   }, [step])
+
+  // Clean up cooldown interval on unmount
+  useEffect(() => {
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current) }
+  }, [])
+
+  function startCooldown(seconds: number) {
+    setCooldown(seconds)
+    cooldownRef.current = setInterval(() => {
+      setCooldown(prev => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current)
+          cooldownRef.current = null
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
 
   function advance() {
     setError('')
@@ -74,6 +112,7 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    if (cooldown > 0) return    // still in cooldown
     setLoading(true)
 
     const { data, error: signUpError } = await supabase.auth.signUp({
@@ -88,8 +127,15 @@ export default function SignupPage() {
     })
 
     if (signUpError) {
-      setError(signUpError.message)
+      const msg = friendlyAuthError(signUpError.message)
+      setError(msg)
       setLoading(false)
+      // Start a 60-second cooldown for rate-limit errors so the user can't keep hammering
+      if (signUpError.message.toLowerCase().includes('rate') ||
+          signUpError.message.toLowerCase().includes('429') ||
+          signUpError.message.toLowerCase().includes('too many')) {
+        startCooldown(60)
+      }
       return
     }
 
@@ -106,6 +152,9 @@ export default function SignupPage() {
         role,
       })
     }
+
+    // Fire welcome email (non-blocking — don't await so it never delays the redirect)
+    fetch('/api/notifications/welcome', { method: 'POST' }).catch(() => {})
 
     // If Supabase issued a session immediately (email confirmation disabled) → go to feed.
     // Otherwise the user needs to confirm their email first → send to login with a notice.
@@ -330,11 +379,15 @@ export default function SignupPage() {
               ) : (
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || cooldown > 0}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-opacity"
                   style={{ background: 'var(--cc-gold)' }}
                 >
-                  {loading ? 'Creating your account…' : 'Join Central Connect →'}
+                  {loading
+                    ? 'Creating your account…'
+                    : cooldown > 0
+                      ? `Try again in ${cooldown}s`
+                      : 'Join Central Connect →'}
                 </button>
               )}
             </div>

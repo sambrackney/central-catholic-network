@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
@@ -8,10 +8,10 @@ import { createClient } from '@/lib/supabase/client'
 import { LIMITS, isValidUUID, sanitize, checkRateLimit } from '@/lib/validation'
 import { containsProfanity } from '@/lib/moderation'
 import type { Database } from '@/types/database.types'
-import { getDisplayLabel } from '@/lib/classYear'
 
 type Message = Database['public']['Tables']['direct_messages']['Row']
 type Profile = Database['public']['Tables']['profiles']['Row']
+type RealtimeChannel = ReturnType<ReturnType<typeof createClient>['channel']>
 
 const MAX_LENGTH = LIMITS.MESSAGE
 
@@ -19,7 +19,10 @@ export default function MessageThreadPage() {
   const params = useParams<{ id: string }>()
   const recipientId = params.id
 
-  const supabase = createClient()
+  // Stable client reference — createClient() returns a new object every render
+  // without this, every render recreates fetchMessages → useEffect → new channel
+  const supabase = useMemo(() => createClient(), [])
+
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [recipient, setRecipient] = useState<Profile | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -27,8 +30,8 @@ export default function MessageThreadPage() {
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const channelRef = useRef<RealtimeChannel | null>(null)
 
-  // Guard against invalid route params
   const validRecipient = isValidUUID(recipientId)
 
   const scrollToBottom = () =>
@@ -55,25 +58,36 @@ export default function MessageThreadPage() {
 
   useEffect(() => {
     if (!validRecipient) return
+    let mounted = true
 
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
+      if (!user || !mounted) return
       setCurrentUserId(user.id)
       fetchMessages(user.id)
 
       const { data } = await supabase.from('profiles').select('*').eq('id', recipientId).single()
-      setRecipient(data)
+      if (mounted) setRecipient(data)
 
+      // Subscribe — store ref so the cleanup below can remove it
       const channel = supabase
         .channel(`dm-${user.id}-${recipientId}`)
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'direct_messages',
           filter: `recipient_id=eq.${user.id}`,
-        }, () => fetchMessages(user.id))
+        }, () => { if (mounted) fetchMessages(user.id) })
         .subscribe()
 
-      return () => { supabase.removeChannel(channel) }
+      channelRef.current = channel
     })
+
+    // This cleanup now actually runs when the component unmounts or deps change
+    return () => {
+      mounted = false
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current)
+        channelRef.current = null
+      }
+    }
   }, [supabase, recipientId, fetchMessages, validRecipient])
 
   useEffect(() => { scrollToBottom() }, [messages])
@@ -108,6 +122,13 @@ export default function MessageThreadPage() {
       setSendError('Failed to send. Please try again.')
       return
     }
+
+    // Fire notification email (non-blocking)
+    fetch('/api/notifications/dm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipientId, messagePreview: cleanText }),
+    }).catch(() => {})
 
     setInput('')
     fetchMessages(currentUserId)
@@ -152,12 +173,9 @@ export default function MessageThreadPage() {
                 style={{ color: 'var(--cc-navy)' }}>
                 {recipient.full_name}
               </Link>
-              {(() => {
-                const label = getDisplayLabel(recipient.graduation_year, recipient.role ?? 'student')
-                return label ? (
-                  <p className="text-xs font-medium" style={{ color: 'var(--cc-navy)' }}>{label}</p>
-                ) : null
-              })()}
+              {recipient.graduation_year && (
+                <p className="text-xs" style={{ color: 'var(--cc-text-muted)' }}>Class of {recipient.graduation_year}</p>
+              )}
             </div>
           </>
         ) : (
@@ -199,9 +217,7 @@ export default function MessageThreadPage() {
 
       {/* Input bar */}
       <div className="bg-white rounded-b-xl border px-4 py-3 shrink-0" style={{ borderColor: 'var(--cc-border)' }}>
-        {sendError && (
-          <p className="text-xs text-red-600 mb-1.5">{sendError}</p>
-        )}
+        {sendError && <p className="text-xs text-red-600 mb-1.5">{sendError}</p>}
         <form onSubmit={sendMessage} className="flex gap-2">
           <div className="flex-1 relative">
             <input

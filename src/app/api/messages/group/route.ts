@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isValidUUID, LIMITS, sanitize } from '@/lib/validation'
 import { profanityError } from '@/lib/moderation'
+import { sendEmail } from '@/lib/email'
+import { groupChatInviteEmail } from '@/lib/email-templates'
+import { APP_URL } from '@/lib/email'
 import type { Database } from '@/types/database.types'
 
 type ChatType = Database['public']['Enums']['chat_type']
@@ -80,6 +83,44 @@ export async function POST(request: NextRequest) {
     // Roll back the chat creation if member seeding fails
     await adminDb.from('group_chats').delete().eq('id', chat.id)
     return NextResponse.json({ error: 'Failed to add members.' }, { status: 500 })
+  }
+
+  // Send invite emails to added members (fire-and-forget, non-blocking)
+  if (memberIds.length > 0) {
+    const { data: creatorProfile } = await adminDb
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single()
+
+    const { data: memberProfiles } = await adminDb
+      .from('profiles')
+      .select('id, full_name, contact_email')
+      .in('id', memberIds)
+
+    const inviterName = creatorProfile?.full_name ?? 'A Viking'
+    const chatUrl = `${APP_URL}/messages/group/${chat.id}`
+
+    for (const member of (memberProfiles ?? [])) {
+      // Resolve email — prefer contact_email, fall back to auth email
+      const email = member.contact_email || await adminDb.auth.admin
+        .getUserById(member.id)
+        .then(r => r.data.user?.email ?? '')
+        .catch(() => '')
+
+      if (!email) continue
+
+      sendEmail({
+        to: email,
+        subject: `${inviterName} added you to "${name}" on Central Connect`,
+        html: groupChatInviteEmail({
+          recipientName: member.full_name ?? 'there',
+          inviterName,
+          chatName: name,
+          chatUrl,
+        }),
+      }).catch(() => {})
+    }
   }
 
   return NextResponse.json({ chat }, { status: 201 })
