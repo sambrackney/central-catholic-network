@@ -139,7 +139,7 @@ export default function NetworkPage() {
                   <p className="text-sm font-semibold truncate flex items-center gap-1" style={{ color: 'var(--cc-navy)' }}>
                     {p.full_name}
                     {p.is_verified && (
-                      <VerifiedBadge size={14} />
+                      <VerifiedBadge size={20} />
                     )}
                   </p>
                   {p.title_company && (

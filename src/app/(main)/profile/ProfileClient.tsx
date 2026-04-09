@@ -97,7 +97,7 @@ export default function ProfileClient({ profile: initialProfile, education: init
           <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--cc-navy)' }}>
             {profile.full_name}
             {profile.is_verified && (
-              <VerifiedBadge size={20} />
+              <VerifiedBadge size={24} />
             )}
           </h1>
           {profile.headline && <p className="text-sm mt-1">{profile.headline}</p>}

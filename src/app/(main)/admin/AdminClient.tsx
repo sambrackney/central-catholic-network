@@ -365,7 +365,7 @@ export default function AdminClient({ currentUserId, initialUsers, stats, recent
                               <p className="font-medium flex items-center gap-1" style={{ color: 'var(--cc-text)' }}>
                                 {user.full_name}
                                 {user.is_verified && (
-                                  <VerifiedBadge size={14} />
+                                  <VerifiedBadge size={20} />
                                 )}
                                 {user.id === currentUserId && (
                                   <span className="text-[10px] text-gray-400">(you)</span>

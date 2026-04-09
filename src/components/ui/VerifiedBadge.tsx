@@ -4,7 +4,7 @@ interface Props {
   size?: number
 }
 
-export default function VerifiedBadge({ size = 16 }: Props) {
+export default function VerifiedBadge({ size = 20 }: Props) {
   return (
     <Image
       src="/verified-badge.jpg"

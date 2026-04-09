@@ -206,6 +206,7 @@ export default function MessagesPage() {
     setGcError('')
     if (!gcForm.name.trim()) { setGcError('Chat name is required.'); return }
     if (gcForm.name.length > LIMITS.TITLE) { setGcError(`Name must be ${LIMITS.TITLE} chars or fewer.`); return }
+    if (gcMembers.length === 0) { setGcError('Add at least one other member to the group.'); return }
 
     const sanitizedName = sanitize(gcForm.name.trim())
     const sanitizedDesc = sanitize(gcForm.description.trim())
@@ -531,7 +532,7 @@ export default function MessagesPage() {
                   className="px-4 py-2 text-sm rounded-lg border font-medium" style={{ borderColor: 'var(--cc-border)' }}>
                   Cancel
                 </button>
-                <button type="submit" disabled={gcCreating || !gcForm.name.trim()}
+                <button type="submit" disabled={gcCreating || !gcForm.name.trim() || gcMembers.length === 0}
                   className="px-4 py-2 text-sm rounded-lg font-semibold text-white disabled:opacity-60"
                   style={{ background: 'var(--cc-navy)' }}>
                   {gcCreating ? 'Creating…' : 'Create group'}

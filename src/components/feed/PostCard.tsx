@@ -90,7 +90,7 @@ export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Pro
                   {author.full_name}
                 </Link>
                 {author.is_verified && (
-                  <VerifiedBadge size={15} />
+                  <VerifiedBadge size={20} />
                 )}
               </div>
               {author.title_company && (
