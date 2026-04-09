@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import GoogleButton from '@/components/ui/GoogleButton'
 import { containsProfanity } from '@/lib/moderation'
+import { computeRole, getClassTitle } from '@/lib/classYear'
 
 const STEPS = [
   { id: 'name',     label: 'Your name',     progress: 25  },
@@ -95,10 +96,14 @@ export default function SignupPage() {
     // Use the user returned directly from signUp — don't call getUser() separately,
     // as the session may not be established yet if email confirmation is required.
     if (data.user) {
+      const parsedYear = gradYear ? parseInt(gradYear) : null
+      // Role is computed from graduation_year; the DB trigger will also enforce this.
+      const role = computeRole(parsedYear)
       await supabase.from('profiles').upsert({
         id: data.user.id,
         full_name: fullName,
-        graduation_year: gradYear ? parseInt(gradYear) : null,
+        graduation_year: parsedYear,
+        role,
       })
     }
 
@@ -260,10 +265,10 @@ export default function SignupPage() {
                       <p className="text-xs font-semibold uppercase tracking-widest mb-2"
                         style={{ color: 'var(--cc-gold)' }}>One last thing</p>
                       <h2 className="text-xl font-bold" style={{ color: 'var(--cc-navy)' }}>
-                        When did you graduate?
+                        What is your Central Catholic graduation year?
                       </h2>
                       <p className="text-sm mt-1" style={{ color: 'var(--cc-text-muted)' }}>
-                        Your PCC graduation year — you can skip this and add it later.
+                        Current or future year for students; past year if you&apos;re an alum. You can skip this and add it later.
                       </p>
                     </div>
                     <input
@@ -271,12 +276,16 @@ export default function SignupPage() {
                       type="number"
                       value={gradYear}
                       onChange={e => { setGradYear(e.target.value); setError('') }}
-                      placeholder="e.g. 2025"
-                      min={1900}
-                      max={2035}
+                      placeholder="e.g. 2027"
+                      min={1940}
+                      max={new Date().getFullYear() + 6}
                       className="w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-navy)] transition-shadow"
                       style={{ borderColor: 'var(--cc-border)' }}
                     />
+                    {/* Live account-type preview */}
+                    {gradYear && parseInt(gradYear) > 1940 && (
+                      <GradYearPreview year={parseInt(gradYear)} />
+                    )}
                   </div>
                 )}
 
@@ -338,6 +347,33 @@ export default function SignupPage() {
           <Link href="/login" className="font-semibold hover:underline" style={{ color: 'var(--cc-navy)' }}>
             Sign in
           </Link>
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function GradYearPreview({ year }: { year: number }) {
+  const role  = computeRole(year)
+  const title = getClassTitle(year)
+
+  const isAlumni  = role === 'alumni'
+  const label     = isAlumni ? `Class of ${year} · Alumni` : title ? `Class of ${year} · ${title}` : `Class of ${year} · Student`
+  const bg        = isAlumni ? '#fef3c7' : '#dbeafe'
+  const color     = isAlumni ? '#92400e' : '#1e3a8a'
+
+  return (
+    <div
+      className="rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2"
+      style={{ background: bg, color }}
+    >
+      <span className="text-base">{isAlumni ? '🎓' : '📚'}</span>
+      <div>
+        <p className="font-semibold">{label}</p>
+        <p className="text-xs font-normal opacity-75">
+          {isAlumni
+            ? 'You\'ll join as an Alumni member.'
+            : `You'll join as a ${title ?? 'Student'}.`}
         </p>
       </div>
     </div>

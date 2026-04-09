@@ -1,7 +1,9 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { profanityError } from '@/lib/moderation'
+import { computeRole } from '@/lib/classYear'
 
 export interface ProfileUpdatePayload {
   full_name: string | null
@@ -55,5 +57,25 @@ export async function updateProfile(
   }).eq('id', user.id)
 
   if (error) return { error: error.message }
+
+  // If graduation_year changed, recompute the role for student/alumni accounts.
+  // The DB trigger handles this automatically, but we also do it here via the
+  // admin client so the change is reflected immediately (bypasses RLS).
+  if (payload.graduation_year !== undefined) {
+    const adminDb = createAdminClient()
+    const { data: existing } = await adminDb
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (existing && (existing.role === 'student' || existing.role === 'alumni')) {
+      const newRole = computeRole(payload.graduation_year)
+      if (newRole !== existing.role) {
+        await adminDb.from('profiles').update({ role: newRole }).eq('id', user.id)
+      }
+    }
+  }
+
   return {}
 }

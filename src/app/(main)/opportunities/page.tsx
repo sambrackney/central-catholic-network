@@ -32,6 +32,8 @@ export default function OpportunitiesPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [filterType, setFilterType] = useState<OpportunityType | ''>('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -41,7 +43,16 @@ export default function OpportunitiesPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUserId(user?.id ?? null))
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      setCurrentUserId(user.id)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+      setIsAdmin(profile?.role === 'admin')
+    })
   }, [supabase])
 
   const fetchOpps = useCallback(async () => {
@@ -57,6 +68,14 @@ export default function OpportunitiesPage() {
   }, [supabase, filterType])
 
   useEffect(() => { fetchOpps() }, [fetchOpps])
+
+  async function handleDelete(id: string) {
+    if (!confirm('Delete this posting?')) return
+    setDeletingId(id)
+    await fetch(`/api/admin/opportunities?id=${id}`, { method: 'DELETE' })
+    setOpps(prev => prev.filter(o => o.id !== id))
+    setDeletingId(null)
+  }
 
   async function handlePost(e: React.FormEvent) {
     e.preventDefault()
@@ -133,6 +152,7 @@ export default function OpportunitiesPage() {
         <div className="space-y-3">
           {opps.map(opp => {
             const colors = TYPE_COLORS[opp.type]
+            const canDelete = isAdmin || opp.posted_by === currentUserId
             return (
               <div key={opp.id} className="bg-white rounded-xl border p-5" style={{ borderColor: 'var(--cc-border)' }}>
                 <div className="flex items-start justify-between gap-4">
@@ -156,13 +176,25 @@ export default function OpportunitiesPage() {
                       {opp.profiles?.graduation_year ? ` · Class of ${opp.profiles.graduation_year}` : ''}
                     </p>
                   </div>
-                  {opp.url && (
-                    <a href={opp.url} target="_blank" rel="noopener noreferrer"
-                      className="shrink-0 px-3 py-1.5 text-xs rounded-lg font-semibold text-white"
-                      style={{ background: 'var(--cc-navy)' }}>
-                      Apply →
-                    </a>
-                  )}
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    {opp.url && (
+                      <a href={opp.url} target="_blank" rel="noopener noreferrer"
+                        className="px-3 py-1.5 text-xs rounded-lg font-semibold text-white"
+                        style={{ background: 'var(--cc-navy)' }}>
+                        Apply →
+                      </a>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(opp.id)}
+                        disabled={deletingId === opp.id}
+                        className="text-xs px-2 py-1 rounded border font-medium disabled:opacity-40"
+                        style={{ borderColor: '#dc2626', color: '#dc2626' }}
+                      >
+                        {deletingId === opp.id ? '…' : 'Delete'}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {opp.expires_at && (
                   <p className="text-xs mt-3 pt-3 border-t" style={{ borderColor: 'var(--cc-border)', color: 'var(--cc-text-muted)' }}>

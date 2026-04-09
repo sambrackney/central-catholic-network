@@ -6,7 +6,9 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import EditProfileModal from '@/components/profile/EditProfileModal'
+import VerifiedBadge from '@/components/ui/VerifiedBadge'
 import type { Database } from '@/types/database.types'
+import { getDisplayLabel } from '@/lib/classYear'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Education = Database['public']['Tables']['education']['Row']
@@ -95,19 +97,19 @@ export default function ProfileClient({ profile: initialProfile, education: init
           <h1 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--cc-navy)' }}>
             {profile.full_name}
             {profile.is_verified && (
-              <span title="Verified alumni" className="text-xs px-2 py-0.5 rounded-full font-medium"
-                style={{ background: 'var(--cc-gold)', color: 'white' }}>
-                ✓ Verified
-              </span>
+              <VerifiedBadge size={20} />
             )}
           </h1>
           {profile.headline && <p className="text-sm mt-1">{profile.headline}</p>}
           {profile.title_company && (
             <p className="text-sm mt-1" style={{ color: 'var(--cc-text-muted)' }}>{profile.title_company}</p>
           )}
-          {profile.graduation_year && (
-            <p className="text-sm" style={{ color: 'var(--cc-text-muted)' }}>Class of {profile.graduation_year}</p>
-          )}
+          {(() => {
+            const label = getDisplayLabel(profile.graduation_year, profile.role ?? 'student')
+            return label ? (
+              <p className="text-sm font-medium mt-0.5" style={{ color: 'var(--cc-navy)' }}>{label}</p>
+            ) : null
+          })()}
           {profile.location && (
             <p className="text-sm" style={{ color: 'var(--cc-text-muted)' }}>{profile.location}</p>
           )}

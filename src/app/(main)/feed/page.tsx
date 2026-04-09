@@ -13,5 +13,5 @@ export default async function FeedPage() {
     .eq('id', user.id)
     .single()
 
-  return <FeedClient initialProfile={profile} userId={user.id} />
+  return <FeedClient initialProfile={profile} userId={user.id} isAdmin={profile?.role === 'admin'} />
 }

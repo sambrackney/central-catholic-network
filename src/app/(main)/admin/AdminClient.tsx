@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import type { Database } from '@/types/database.types'
+import VerifiedBadge from '@/components/ui/VerifiedBadge'
 
 type UserRole = Database['public']['Enums']['user_role']
 
@@ -89,15 +90,18 @@ function StatCard({ label, value, sub }: { label: string; value: number; sub?: s
 export default function AdminClient({ currentUserId, initialUsers, stats, recentPosts, recentConnections }: Props) {
   const [activeTab, setActiveTab] = useState<'users' | 'activity'>('users')
   const [users, setUsers] = useState<UserRow[]>(initialUsers)
+  const [posts, setPosts] = useState<RecentPost[]>(recentPosts)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
   const [verifiedFilter, setVerifiedFilter] = useState<'all' | 'verified' | 'unverified'>('all')
   const [isPending, startTransition] = useTransition()
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+  const [confirmDeleteUserId, setConfirmDeleteUserId] = useState<string | null>(null)
+  const [actionPending, setActionPending] = useState<string | null>(null)
 
   function showToast(message: string, type: 'success' | 'error') {
     setToast({ message, type })
-    setTimeout(() => setToast(null), 3000)
+    setTimeout(() => setToast(null), 3500)
   }
 
   async function updateUser(userId: string, patch: { role?: UserRole; is_verified?: boolean }) {
@@ -118,6 +122,54 @@ export default function AdminClient({ currentUserId, initialUsers, stats, recent
         showToast(err instanceof Error ? err.message : 'Update failed', 'error')
       }
     })
+  }
+
+  async function deleteUser(userId: string) {
+    setConfirmDeleteUserId(null)
+    setActionPending(userId)
+    try {
+      const res = await fetch(`/api/admin/users?userId=${userId}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Delete failed')
+      setUsers(prev => prev.filter(u => u.id !== userId))
+      showToast('User deleted', 'success')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Delete failed', 'error')
+    } finally {
+      setActionPending(null)
+    }
+  }
+
+  async function resetPassword(userId: string) {
+    setActionPending(userId + '-reset')
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Failed to send reset')
+      showToast('Password reset email sent', 'success')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Reset failed', 'error')
+    } finally {
+      setActionPending(null)
+    }
+  }
+
+  async function deletePost(postId: string) {
+    setActionPending('post-' + postId)
+    try {
+      const res = await fetch(`/api/admin/posts?id=${postId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete failed')
+      setPosts(prev => prev.filter(p => p.id !== postId))
+      showToast('Post deleted', 'success')
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Delete failed', 'error')
+    } finally {
+      setActionPending(null)
+    }
   }
 
   const filteredUsers = useMemo(() => {
@@ -151,6 +203,35 @@ export default function AdminClient({ currentUserId, initialUsers, stats, recent
           }}
         >
           {toast.message}
+        </div>
+      )}
+
+      {/* Delete user confirmation modal */}
+      {confirmDeleteUserId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setConfirmDeleteUserId(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h2 className="text-base font-semibold mb-2" style={{ color: 'var(--cc-navy)' }}>Delete user?</h2>
+            <p className="text-sm mb-5" style={{ color: 'var(--cc-text-muted)' }}>
+              This will permanently delete the account and all associated data. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDeleteUserId(null)}
+                className="px-4 py-2 text-sm rounded-lg border font-medium"
+                style={{ borderColor: 'var(--cc-border)' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteUser(confirmDeleteUserId)}
+                className="px-4 py-2 text-sm rounded-lg font-semibold text-white"
+                style={{ background: '#dc2626' }}
+              >
+                Delete user
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -255,17 +336,18 @@ export default function AdminClient({ currentUserId, initialUsers, stats, recent
                     <th className="px-4 py-3">Verified</th>
                     <th className="px-4 py-3">Joined</th>
                     <th className="px-4 py-3">Details</th>
+                    <th className="px-4 py-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-sm" style={{ color: 'var(--cc-text-muted)' }}>
+                      <td colSpan={7} className="px-4 py-8 text-center text-sm" style={{ color: 'var(--cc-text-muted)' }}>
                         No users match your filters
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((user, idx) => (
+                    filteredUsers.map(user => (
                       <tr
                         key={user.id}
                         className="border-t transition-colors hover:bg-gray-50"
@@ -280,10 +362,13 @@ export default function AdminClient({ currentUserId, initialUsers, stats, recent
                               {user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-medium" style={{ color: 'var(--cc-text)' }}>
+                              <p className="font-medium flex items-center gap-1" style={{ color: 'var(--cc-text)' }}>
                                 {user.full_name}
+                                {user.is_verified && (
+                                  <VerifiedBadge size={14} />
+                                )}
                                 {user.id === currentUserId && (
-                                  <span className="ml-2 text-[10px] text-gray-400">(you)</span>
+                                  <span className="text-[10px] text-gray-400">(you)</span>
                                 )}
                               </p>
                               {user.graduation_year && (
@@ -334,6 +419,30 @@ export default function AdminClient({ currentUserId, initialUsers, stats, recent
                             ? [user.title_company, user.location].filter(Boolean).join(' · ')
                             : '—'}
                         </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              disabled={actionPending === user.id + '-reset'}
+                              onClick={() => resetPassword(user.id)}
+                              title="Send password reset email"
+                              className="text-[11px] px-2 py-1 rounded border font-medium disabled:opacity-40 whitespace-nowrap"
+                              style={{ borderColor: 'var(--cc-border)', color: 'var(--cc-navy)' }}
+                            >
+                              {actionPending === user.id + '-reset' ? '…' : 'Reset pwd'}
+                            </button>
+                            {user.id !== currentUserId && (
+                              <button
+                                disabled={actionPending === user.id}
+                                onClick={() => setConfirmDeleteUserId(user.id)}
+                                title="Delete user"
+                                className="text-[11px] px-2 py-1 rounded border font-medium disabled:opacity-40"
+                                style={{ borderColor: '#dc2626', color: '#dc2626' }}
+                              >
+                                {actionPending === user.id ? '…' : 'Delete'}
+                              </button>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -350,11 +459,11 @@ export default function AdminClient({ currentUserId, initialUsers, stats, recent
               <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--cc-text)' }}>
                 Recent Posts
               </h3>
-              {recentPosts.length === 0 ? (
+              {posts.length === 0 ? (
                 <p className="text-sm" style={{ color: 'var(--cc-text-muted)' }}>No posts yet</p>
               ) : (
                 <div className="space-y-2">
-                  {recentPosts.map(post => (
+                  {posts.map(post => (
                     <div
                       key={post.id}
                       className="rounded-lg border p-3"
@@ -367,11 +476,21 @@ export default function AdminClient({ currentUserId, initialUsers, stats, recent
                         >
                           {post.post_type}
                         </span>
-                        <span className="text-xs" style={{ color: 'var(--cc-text-muted)' }}>
-                          {new Date(post.created_at).toLocaleDateString('en-US', {
-                            month: 'short', day: 'numeric', year: 'numeric',
-                          })}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs" style={{ color: 'var(--cc-text-muted)' }}>
+                            {new Date(post.created_at).toLocaleDateString('en-US', {
+                              month: 'short', day: 'numeric', year: 'numeric',
+                            })}
+                          </span>
+                          <button
+                            disabled={actionPending === 'post-' + post.id}
+                            onClick={() => deletePost(post.id)}
+                            className="text-[11px] px-2 py-0.5 rounded border font-medium disabled:opacity-40"
+                            style={{ borderColor: '#dc2626', color: '#dc2626' }}
+                          >
+                            {actionPending === 'post-' + post.id ? '…' : 'Delete'}
+                          </button>
+                        </div>
                       </div>
                       <p
                         className="text-sm line-clamp-2"

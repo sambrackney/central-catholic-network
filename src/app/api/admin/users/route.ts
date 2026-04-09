@@ -20,6 +20,65 @@ async function getCallerProfile() {
   return profile
 }
 
+// DELETE /api/admin/users?userId=... — delete a user account
+export async function DELETE(request: NextRequest) {
+  const caller = await getCallerProfile()
+  if (!caller || caller.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const userId = request.nextUrl.searchParams.get('userId')
+  if (!userId) {
+    return NextResponse.json({ error: 'userId is required' }, { status: 400 })
+  }
+
+  if (userId === caller.id) {
+    return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
+  }
+
+  const adminDb = createAdminClient()
+  const { error } = await adminDb.auth.admin.deleteUser(userId)
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}
+
+// POST /api/admin/users — send password reset email
+export async function POST(request: NextRequest) {
+  const caller = await getCallerProfile()
+  if (!caller || caller.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const body = await request.json() as { userId: string }
+  const { userId } = body
+  if (!userId) {
+    return NextResponse.json({ error: 'userId is required' }, { status: 400 })
+  }
+
+  const adminDb = createAdminClient()
+  const { data: authUser, error: fetchError } = await adminDb.auth.admin.getUserById(userId)
+  if (fetchError || !authUser.user?.email) {
+    return NextResponse.json({ error: 'User not found or has no email' }, { status: 404 })
+  }
+
+  const { error } = await adminDb.auth.admin.generateLink({
+    type: 'recovery',
+    email: authUser.user.email,
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/auth/callback`,
+    },
+  })
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}
+
 // GET /api/admin/users — list all users with profile data
 export async function GET() {
   const caller = await getCallerProfile()

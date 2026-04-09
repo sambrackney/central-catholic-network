@@ -5,10 +5,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import type { Database } from '@/types/database.types'
+import VerifiedBadge from '@/components/ui/VerifiedBadge'
+import { getDisplayLabel } from '@/lib/classYear'
 
 type Post = Database['public']['Tables']['posts']['Row'] & {
   profiles: Pick<Database['public']['Tables']['profiles']['Row'],
-    'id' | 'full_name' | 'photo_url' | 'title_company' | 'graduation_year'>
+    'id' | 'full_name' | 'photo_url' | 'title_company' | 'graduation_year' | 'is_verified' | 'role'>
   reaction_count: number
   user_reacted: boolean
 }
@@ -16,10 +18,11 @@ type Post = Database['public']['Tables']['posts']['Row'] & {
 interface Props {
   post: Post
   currentUserId: string
+  isAdmin?: boolean
   onDelete?: () => void
 }
 
-export default function PostCard({ post, currentUserId, onDelete }: Props) {
+export default function PostCard({ post, currentUserId, isAdmin, onDelete }: Props) {
   const supabase = createClient()
   const [liked, setLiked] = useState(post.user_reacted)
   const [likeCount, setLikeCount] = useState(post.reaction_count)
@@ -45,8 +48,13 @@ export default function PostCard({ post, currentUserId, onDelete }: Props) {
   }
 
   async function handleDelete() {
+    if (!confirm('Delete this post?')) return
     setDeleting(true)
-    await supabase.from('posts').delete().eq('id', post.id)
+    if (isAdmin && author.id !== currentUserId) {
+      await fetch(`/api/admin/posts?id=${post.id}`, { method: 'DELETE' })
+    } else {
+      await supabase.from('posts').delete().eq('id', post.id)
+    }
     onDelete?.()
   }
 
@@ -76,16 +84,24 @@ export default function PostCard({ post, currentUserId, onDelete }: Props) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <Link href={`/profile/${author.id}`} className="text-sm font-semibold hover:underline"
-                style={{ color: 'var(--cc-navy)' }}>
-                {author.full_name}
-              </Link>
+              <div className="flex items-center gap-1.5">
+                <Link href={`/profile/${author.id}`} className="text-sm font-semibold hover:underline"
+                  style={{ color: 'var(--cc-navy)' }}>
+                  {author.full_name}
+                </Link>
+                {author.is_verified && (
+                  <VerifiedBadge size={15} />
+                )}
+              </div>
               {author.title_company && (
                 <p className="text-xs" style={{ color: 'var(--cc-text-muted)' }}>{author.title_company}</p>
               )}
-              {author.graduation_year && (
-                <p className="text-xs" style={{ color: 'var(--cc-text-muted)' }}>Class of {author.graduation_year}</p>
-              )}
+              {(() => {
+                const label = getDisplayLabel(author.graduation_year, author.role ?? 'student')
+                return label ? (
+                  <p className="text-xs font-medium" style={{ color: 'var(--cc-navy)' }}>{label}</p>
+                ) : null
+              })()}
             </div>
             <span className="text-xs shrink-0" style={{ color: 'var(--cc-text-muted)' }}>
               {timeAgo(post.created_at)}
@@ -108,7 +124,7 @@ export default function PostCard({ post, currentUserId, onDelete }: Props) {
               <span>Like</span>
             </button>
 
-            {author.id === currentUserId && (
+            {(author.id === currentUserId || isAdmin) && (
               <button onClick={handleDelete} disabled={deleting}
                 className="text-xs transition-colors disabled:opacity-40"
                 style={{ color: 'var(--cc-text-muted)' }}>

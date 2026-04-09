@@ -5,7 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import VerifiedBadge from '@/components/ui/VerifiedBadge'
 import type { Database } from '@/types/database.types'
+import { getDisplayLabel } from '@/lib/classYear'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
@@ -137,8 +139,7 @@ export default function NetworkPage() {
                   <p className="text-sm font-semibold truncate flex items-center gap-1" style={{ color: 'var(--cc-navy)' }}>
                     {p.full_name}
                     {p.is_verified && (
-                      <span title="Verified" className="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-                        style={{ background: 'var(--cc-gold)', color: 'white' }}>✓</span>
+                      <VerifiedBadge size={14} />
                     )}
                   </p>
                   {p.title_company && (

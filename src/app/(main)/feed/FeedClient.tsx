@@ -7,20 +7,22 @@ import { createClient } from '@/lib/supabase/client'
 import PostComposer from '@/components/feed/PostComposer'
 import PostCard from '@/components/feed/PostCard'
 import type { Database } from '@/types/database.types'
+import { getDisplayLabel } from '@/lib/classYear'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
 interface Props {
   initialProfile: Profile | null
   userId: string
+  isAdmin?: boolean
 }
 
-export default function FeedClient({ initialProfile, userId }: Props) {
+export default function FeedClient({ initialProfile, userId, isAdmin }: Props) {
   const supabase = createClient()
   const [profile, setProfile] = useState<Profile | null>(initialProfile)
   const [posts, setPosts] = useState<any[]>([])
   const [loadingPosts, setLoadingPosts] = useState(true)
-  const [suggestions, setSuggestions] = useState<Pick<Profile, 'id' | 'full_name' | 'photo_url' | 'title_company' | 'graduation_year'>[]>([])
+  const [suggestions, setSuggestions] = useState<Pick<Profile, 'id' | 'full_name' | 'photo_url' | 'title_company' | 'graduation_year' | 'role'>[]>([])
 
   const fetchPosts = useCallback(async () => {
     setLoadingPosts(true)
@@ -28,7 +30,7 @@ export default function FeedClient({ initialProfile, userId }: Props) {
       .from('posts')
       .select(`
         *,
-        profiles!author_id (id, full_name, photo_url, title_company, graduation_year)
+        profiles!author_id (id, full_name, photo_url, title_company, graduation_year, is_verified, role)
       `)
       .order('created_at', { ascending: false })
       .limit(30)
@@ -64,7 +66,7 @@ export default function FeedClient({ initialProfile, userId }: Props) {
 
   useEffect(() => {
     supabase.from('profiles')
-      .select('id, full_name, photo_url, title_company, graduation_year')
+      .select('id, full_name, photo_url, title_company, graduation_year, role')
       .neq('id', userId)
       .order('created_at', { ascending: false })
       .limit(5)
@@ -98,9 +100,12 @@ export default function FeedClient({ initialProfile, userId }: Props) {
             {profile?.title_company && (
               <p className="text-xs mt-0.5" style={{ color: 'var(--cc-text-muted)' }}>{profile.title_company}</p>
             )}
-            {profile?.graduation_year && (
-              <p className="text-xs mt-0.5" style={{ color: 'var(--cc-text-muted)' }}>Class of {profile.graduation_year}</p>
-            )}
+            {(() => {
+              const label = getDisplayLabel(profile?.graduation_year, profile?.role ?? 'student')
+              return label ? (
+                <p className="text-xs mt-0.5 font-medium" style={{ color: 'var(--cc-navy)' }}>{label}</p>
+              ) : null
+            })()}
             {profile?.engagement_points !== undefined && profile.engagement_points > 0 && (
               <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--cc-border)' }}>
                 <p className="text-xs" style={{ color: 'var(--cc-text-muted)' }}>
@@ -155,7 +160,7 @@ export default function FeedClient({ initialProfile, userId }: Props) {
         ) : (
           <div className="space-y-4">
             {posts.map(post => (
-              <PostCard key={post.id} post={post} currentUserId={userId} onDelete={fetchPosts} />
+              <PostCard key={post.id} post={post} currentUserId={userId} isAdmin={isAdmin} onDelete={fetchPosts} />
             ))}
           </div>
         )}
@@ -182,9 +187,12 @@ export default function FeedClient({ initialProfile, userId }: Props) {
                     style={{ color: 'var(--cc-navy)' }}>
                     {s.full_name}
                   </Link>
-                  {s.graduation_year && (
-                    <p className="text-[11px] truncate" style={{ color: 'var(--cc-text-muted)' }}>Class of {s.graduation_year}</p>
-                  )}
+                  {(() => {
+                    const label = getDisplayLabel(s.graduation_year, s.role ?? 'student')
+                    return label ? (
+                      <p className="text-[11px] truncate font-medium" style={{ color: 'var(--cc-navy)' }}>{label}</p>
+                    ) : null
+                  })()}
                 </div>
                 <Link href={`/profile/${s.id}`}
                   className="text-[11px] font-medium px-2 py-1 rounded-full border whitespace-nowrap"

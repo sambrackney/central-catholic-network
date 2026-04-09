@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { updateProfile } from '@/actions/profiles'
 import type { Database } from '@/types/database.types'
+import { computeRole, getAccountLabel } from '@/lib/classYear'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Education = Database['public']['Tables']['education']['Row']
@@ -208,9 +209,32 @@ export default function EditProfileModal({ profile, education, experience, skill
           <div className="p-3 rounded-lg text-sm" style={{ background: 'var(--cc-gold-pale)', color: 'var(--cc-navy)' }}>
             High school: <strong>Central Catholic High School, Pittsburgh PA</strong>
           </div>
-          <div><label className={labelClass}>Graduation year at Central Catholic</label>
+          <div>
+            <label className={labelClass}>Graduation year at Central Catholic</label>
             <input type="number" value={gradYear} onChange={e => setGradYear(e.target.value)}
-              className={inputClass} style={{ borderColor: 'var(--cc-border)' }} placeholder="e.g. 2025" /></div>
+              className={inputClass} style={{ borderColor: 'var(--cc-border)' }} placeholder="e.g. 2027" />
+            {/* Live read-only account-status preview */}
+            {gradYear && parseInt(gradYear) > 1940 && (() => {
+              const yr   = parseInt(gradYear)
+              const role = profile.role === 'admin' || profile.role === 'faculty'
+                ? profile.role
+                : computeRole(yr)
+              const label = getAccountLabel(yr, role)
+              const isAlumni  = role === 'alumni'
+              const isSpecial = role === 'admin' || role === 'faculty'
+              const bg    = isSpecial ? '#dcfce7' : isAlumni ? '#fef3c7' : '#dbeafe'
+              const color = isSpecial ? '#166534' : isAlumni ? '#92400e' : '#1e3a8a'
+              return (
+                <div
+                  className="mt-2 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2"
+                  style={{ background: bg, color }}
+                >
+                  <span>Account status (auto-assigned):</span>
+                  <span className="font-bold">{label}</span>
+                </div>
+              )
+            })()}
+          </div>
           <div><label className={labelClass}>Clubs, activities, and sports at PCC</label>
             <textarea value={hsActivities} onChange={e => setHsActivities(e.target.value)} rows={3}
               className={inputClass} style={{ borderColor: 'var(--cc-border)' }} /></div>

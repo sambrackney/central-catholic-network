@@ -5,25 +5,37 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { LIMITS, isValidUUID, sanitize, checkRateLimit } from '@/lib/validation'
+import { containsProfanity } from '@/lib/moderation'
 import type { Database } from '@/types/database.types'
+import { getDisplayLabel } from '@/lib/classYear'
 
 type Message = Database['public']['Tables']['direct_messages']['Row']
 type Profile = Database['public']['Tables']['profiles']['Row']
 
+const MAX_LENGTH = LIMITS.MESSAGE
+
 export default function MessageThreadPage() {
-  const { id: recipientId } = useParams<{ id: string }>()
+  const params = useParams<{ id: string }>()
+  const recipientId = params.id
+
   const supabase = createClient()
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [recipient, setRecipient] = useState<Profile | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
+
+  // Guard against invalid route params
+  const validRecipient = isValidUUID(recipientId)
 
   const scrollToBottom = () =>
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
 
   const fetchMessages = useCallback(async (userId: string) => {
+    if (!validRecipient) return
     const { data } = await supabase
       .from('direct_messages')
       .select('*')
@@ -33,16 +45,17 @@ export default function MessageThreadPage() {
       .order('created_at', { ascending: true })
     setMessages(data ?? [])
 
-    // Mark received messages as read
     await supabase
       .from('direct_messages')
       .update({ is_read: true })
       .eq('sender_id', recipientId)
       .eq('recipient_id', userId)
       .eq('is_read', false)
-  }, [supabase, recipientId])
+  }, [supabase, recipientId, validRecipient])
 
   useEffect(() => {
+    if (!validRecipient) return
+
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
       setCurrentUserId(user.id)
@@ -51,7 +64,6 @@ export default function MessageThreadPage() {
       const { data } = await supabase.from('profiles').select('*').eq('id', recipientId).single()
       setRecipient(data)
 
-      // Realtime subscription
       const channel = supabase
         .channel(`dm-${user.id}-${recipientId}`)
         .on('postgres_changes', {
@@ -62,21 +74,42 @@ export default function MessageThreadPage() {
 
       return () => { supabase.removeChannel(channel) }
     })
-  }, [supabase, recipientId, fetchMessages])
+  }, [supabase, recipientId, fetchMessages, validRecipient])
 
   useEffect(() => { scrollToBottom() }, [messages])
 
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault()
-    if (!input.trim() || !currentUserId) return
+    setSendError('')
+    const text = input.trim()
+
+    if (!text || !currentUserId) return
+    if (!validRecipient) { setSendError('Invalid recipient.'); return }
+    if (text.length > MAX_LENGTH) {
+      setSendError(`Message must be ${MAX_LENGTH} characters or fewer.`)
+      return
+    }
+    if (containsProfanity(text)) {
+      setSendError('Your message contains prohibited language.')
+      return
+    }
+    if (!checkRateLimit('dm-send', 800)) return
+
     setSending(true)
-    await supabase.from('direct_messages').insert({
+    const cleanText = sanitize(text)
+    const { error } = await supabase.from('direct_messages').insert({
       sender_id: currentUserId,
       recipient_id: recipientId,
-      content: input.trim(),
+      content: cleanText,
     })
-    setInput('')
     setSending(false)
+
+    if (error) {
+      setSendError('Failed to send. Please try again.')
+      return
+    }
+
+    setInput('')
     fetchMessages(currentUserId)
   }
 
@@ -85,6 +118,17 @@ export default function MessageThreadPage() {
 
   const formatTime = (ts: string) =>
     new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+  if (!validRecipient) {
+    return (
+      <div className="max-w-2xl mx-auto pt-16 text-center">
+        <p className="text-sm" style={{ color: 'var(--cc-text-muted)' }}>Invalid conversation URL.</p>
+        <Link href="/messages" className="text-sm font-semibold underline mt-2 inline-block" style={{ color: 'var(--cc-navy)' }}>
+          Back to messages
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col h-[calc(100vh-80px)]">
@@ -108,9 +152,12 @@ export default function MessageThreadPage() {
                 style={{ color: 'var(--cc-navy)' }}>
                 {recipient.full_name}
               </Link>
-              {recipient.graduation_year && (
-                <p className="text-xs" style={{ color: 'var(--cc-text-muted)' }}>Class of {recipient.graduation_year}</p>
-              )}
+              {(() => {
+                const label = getDisplayLabel(recipient.graduation_year, recipient.role ?? 'student')
+                return label ? (
+                  <p className="text-xs font-medium" style={{ color: 'var(--cc-navy)' }}>{label}</p>
+                ) : null
+              })()}
             </div>
           </>
         ) : (
@@ -138,8 +185,8 @@ export default function MessageThreadPage() {
                   borderBottomRightRadius: isMine ? '4px' : undefined,
                   borderBottomLeftRadius: !isMine ? '4px' : undefined,
                 }}>
-                <p>{msg.content}</p>
-                <p className={`text-[10px] mt-1 ${isMine ? 'text-blue-200' : ''}`}
+                <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                <p className="text-[10px] mt-1"
                   style={{ color: isMine ? 'rgba(255,255,255,0.6)' : 'var(--cc-text-muted)' }}>
                   {formatTime(msg.created_at)}
                 </p>
@@ -151,23 +198,35 @@ export default function MessageThreadPage() {
       </div>
 
       {/* Input bar */}
-      <form onSubmit={sendMessage}
-        className="bg-white rounded-b-xl border px-4 py-3 flex gap-2 shrink-0"
-        style={{ borderColor: 'var(--cc-border)' }}>
-        <input
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Write a message…"
-          className="flex-1 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-gold)]"
-          style={{ borderColor: 'var(--cc-border)' }}
-        />
-        <button type="submit" disabled={sending || !input.trim()}
-          className="px-4 py-2 text-sm rounded-full font-semibold text-white disabled:opacity-60"
-          style={{ background: 'var(--cc-navy)' }}>
-          Send
-        </button>
-      </form>
+      <div className="bg-white rounded-b-xl border px-4 py-3 shrink-0" style={{ borderColor: 'var(--cc-border)' }}>
+        {sendError && (
+          <p className="text-xs text-red-600 mb-1.5">{sendError}</p>
+        )}
+        <form onSubmit={sendMessage} className="flex gap-2">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={input}
+              onChange={e => { setInput(e.target.value); setSendError('') }}
+              placeholder="Write a message…"
+              maxLength={MAX_LENGTH}
+              className="w-full border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-gold)]"
+              style={{ borderColor: 'var(--cc-border)' }}
+            />
+            {input.length > MAX_LENGTH * 0.85 && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px]"
+                style={{ color: input.length >= MAX_LENGTH ? '#dc2626' : 'var(--cc-text-muted)' }}>
+                {MAX_LENGTH - input.length}
+              </span>
+            )}
+          </div>
+          <button type="submit" disabled={sending || !input.trim()}
+            className="px-4 py-2 text-sm rounded-full font-semibold text-white disabled:opacity-60"
+            style={{ background: 'var(--cc-navy)' }}>
+            Send
+          </button>
+        </form>
+      </div>
     </div>
   )
 }
