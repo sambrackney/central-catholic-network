@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isValidUUID, LIMITS, sanitize } from '@/lib/validation'
 import { profanityError } from '@/lib/moderation'
+import type { Database } from '@/types/database.types'
+
+type ChatType = Database['public']['Enums']['chat_type']
 
 const ALLOWED_CHAT_TYPES = ['industry', 'grad_year', 'club_sport', 'general'] as const
 
@@ -59,7 +62,7 @@ export async function POST(request: NextRequest) {
   // Create the group chat
   const { data: chat, error: chatError } = await adminDb
     .from('group_chats')
-    .insert({ name, description, chat_type, created_by: user.id })
+    .insert({ name, description, chat_type: chat_type as ChatType, created_by: user.id })
     .select()
     .single()
 
