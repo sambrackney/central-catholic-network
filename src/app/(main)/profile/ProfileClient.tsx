@@ -10,6 +10,36 @@ import VerifiedBadge from '@/components/ui/VerifiedBadge'
 import type { Database } from '@/types/database.types'
 import { getDisplayLabel } from '@/lib/classYear'
 
+/** Renders a college/university logo via Clearbit, falling back to a letter avatar. */
+function CollegeLogo({ name, website }: { name: string; website: string | null }) {
+  const [failed, setFailed] = useState(false)
+
+  const domain = website?.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '') ?? ''
+
+  if (!domain || failed) {
+    return (
+      <div
+        className="w-11 h-11 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold shrink-0"
+        style={{ color: 'var(--cc-navy)' }}
+      >
+        {name[0]?.toUpperCase()}
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={`https://logo.clearbit.com/${domain}`}
+      alt={name}
+      width={44}
+      height={44}
+      className="rounded-lg object-contain bg-white border shrink-0"
+      style={{ borderColor: 'var(--cc-border)' }}
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
 type Profile = Database['public']['Tables']['profiles']['Row']
 type Education = Database['public']['Tables']['education']['Row']
 type Experience = Database['public']['Tables']['experience']['Row']
@@ -170,19 +200,7 @@ export default function ProfileClient({ profile: initialProfile, education: init
 
         {college && (
           <div className="flex items-start gap-3 border-t pt-4" style={{ borderColor: 'var(--cc-border)' }}>
-            {college.website ? (
-              <img
-                src={`https://www.google.com/s2/favicons?sz=44&domain=${college.website}`}
-                alt={college.institution_name}
-                width={44} height={44}
-                className="rounded shrink-0"
-              />
-            ) : (
-              <div className="w-11 h-11 rounded bg-gray-100 flex items-center justify-center text-xs font-bold shrink-0"
-                style={{ color: 'var(--cc-navy)' }}>
-                {college.institution_name[0]}
-              </div>
-            )}
+            <CollegeLogo name={college.institution_name} website={college.website} />
             <div>
               <p className="text-sm font-semibold">{college.institution_name}</p>
               {college.degree && <p className="text-xs" style={{ color: 'var(--cc-text-muted)' }}>{college.degree}{college.major ? `, ${college.major}` : ''}</p>}
