@@ -7,16 +7,44 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import GoogleButton from '@/components/ui/GoogleButton'
 
+function EyeButton({ visible, onToggle }: { visible: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      tabIndex={-1}
+      aria-label={visible ? 'Hide password' : 'Show password'}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+    >
+      {visible ? (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>
+        </svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      )}
+    </button>
+  )
+}
+
 function LoginForm() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const notice       = searchParams.get('notice')
   const oauthError   = searchParams.get('error')
   const supabase     = createClient()
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [email, setEmail]           = useState('')
+  const [password, setPassword]     = useState('')
+  const [showPassword, setShowPass] = useState(false)
+  const [error, setError]           = useState('')
+  const [loading, setLoading]       = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -54,6 +82,16 @@ function LoginForm() {
           </div>
         )}
 
+        {notice === 'account-created' && (
+          <div className="mb-5 px-4 py-3 rounded-xl text-sm border"
+            style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' }}>
+            <p className="font-semibold mb-0.5">Account created!</p>
+            <p className="text-xs" style={{ color: '#15803d' }}>
+              You&apos;re all set. Sign in below to get started.
+            </p>
+          </div>
+        )}
+
         {notice === 'confirm-email' && (
           <div className="mb-5 px-4 py-3 rounded-xl text-sm border"
             style={{ background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' }}>
@@ -87,13 +125,16 @@ function LoginForm() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--cc-text)' }}>Password</label>
-            <input
-              type="password" required value={password}
-              onChange={e => { setPassword(e.target.value); setError('') }}
-              placeholder="••••••••" autoComplete="current-password"
-              className="w-full border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-navy)] transition-shadow"
-              style={{ borderColor: 'var(--cc-border)' }}
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'} required value={password}
+                onChange={e => { setPassword(e.target.value); setError('') }}
+                placeholder="••••••••" autoComplete="current-password"
+                className="w-full border rounded-xl px-4 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-navy)] transition-shadow"
+                style={{ borderColor: 'var(--cc-border)' }}
+              />
+              <EyeButton visible={showPassword} onToggle={() => setShowPass(v => !v)} />
+            </div>
           </div>
 
           {error && (

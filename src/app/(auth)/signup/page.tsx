@@ -11,10 +11,10 @@ import { containsProfanity } from '@/lib/moderation'
 import { computeRole, getClassTitle } from '@/lib/classYear'
 
 const STEPS = [
-  { id: 'name',     label: 'Your name',     progress: 25  },
-  { id: 'email',    label: 'Email',         progress: 50  },
-  { id: 'password', label: 'Password',      progress: 75  },
-  { id: 'year',     label: 'Grad year',     progress: 100 },
+  { id: 'name',     label: 'Your name',   progress: 25  },
+  { id: 'email',    label: 'Email',       progress: 50  },
+  { id: 'password', label: 'Password',    progress: 75  },
+  { id: 'year',     label: 'Grad year',   progress: 100 },
 ]
 
 const variants = {
@@ -23,48 +23,64 @@ const variants = {
   exit:  (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
 }
 
-// Human-readable messages for common Supabase auth errors
-function friendlyAuthError(message: string): string {
-  const m = message.toLowerCase()
-  if (m.includes('rate limit') || m.includes('429') || m.includes('too many'))
-    return 'Too many signup attempts. Please wait a few minutes before trying again.'
-  if (m.includes('already registered') || m.includes('already exists') || m.includes('unique'))
-    return 'An account with that email already exists. Try signing in instead.'
-  if (m.includes('invalid email'))
-    return 'Please enter a valid email address.'
-  if (m.includes('password'))
-    return 'Password is too weak. Please use at least 6 characters.'
-  if (m.includes('network') || m.includes('fetch'))
-    return 'Network error. Please check your connection and try again.'
-  return message
+// ── Eye-toggle button ─────────────────────────────────────────────────────
+function EyeButton({ visible, onToggle }: { visible: boolean; onToggle: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      tabIndex={-1}
+      aria-label={visible ? 'Hide password' : 'Show password'}
+      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+    >
+      {visible ? (
+        // Eye-off
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+          <line x1="1" y1="1" x2="23" y2="23"/>
+        </svg>
+      ) : (
+        // Eye
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      )}
+    </button>
+  )
 }
 
 export default function SignupPage() {
-  const router  = useRouter()
+  const router   = useRouter()
   const supabase = createClient()
 
-  const [step, setStep]             = useState(0)
-  const [dir,  setDir]              = useState(1)       // 1 = forward, -1 = back
-  const [loading, setLoading]       = useState(false)
-  const [error, setError]           = useState('')
-  // Cooldown prevents hammering the submit button after a rate-limit error
-  const [cooldown, setCooldown]     = useState(0)
-  const cooldownRef                 = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [step, setStep]         = useState(0)
+  const [dir,  setDir]          = useState(1)
+  const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState('')
+  const [cooldown, setCooldown] = useState(0)
+  const cooldownRef             = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const [fullName, setFullName]     = useState('')
-  const [email, setEmail]           = useState('')
-  const [password, setPassword]     = useState('')
-  const [gradYear, setGradYear]     = useState('')
+  const [fullName, setFullName]       = useState('')
+  const [email, setEmail]             = useState('')
+  const [password, setPassword]       = useState('')
+  const [confirmPassword, setConfirm] = useState('')
+  const [gradYear, setGradYear]       = useState('')
+
+  // Eye-toggle state
+  const [showPassword, setShowPassword]   = useState(false)
+  const [showConfirm, setShowConfirm]     = useState(false)
 
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Focus the input whenever the step changes
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 250)
     return () => clearTimeout(t)
   }, [step])
 
-  // Clean up cooldown interval on unmount
   useEffect(() => {
     return () => { if (cooldownRef.current) clearInterval(cooldownRef.current) }
   }, [])
@@ -98,72 +114,66 @@ export default function SignupPage() {
 
   function validate() {
     if (step === 0) {
-      if (!fullName.trim())                  { setError('Please enter your full name.'); return false }
-      if (containsProfanity(fullName))       { setError('Your name contains prohibited language.'); return false }
+      if (!fullName.trim())            { setError('Please enter your full name.'); return false }
+      if (containsProfanity(fullName)) { setError('Your name contains prohibited language.'); return false }
     }
     if (step === 1) {
-      if (!email.trim())                   { setError('Please enter your email.'); return false }
-      if (!/\S+@\S+\.\S+/.test(email))    { setError('Please enter a valid email address.'); return false }
+      if (!email.trim())                 { setError('Please enter your email.'); return false }
+      if (!/\S+@\S+\.\S+/.test(email))  { setError('Please enter a valid email address.'); return false }
     }
-    if (step === 2 && password.length < 6) { setError('Password must be at least 6 characters.'); return false }
+    if (step === 2) {
+      if (password.length < 6)               { setError('Password must be at least 6 characters.'); return false }
+      if (!confirmPassword)                  { setError('Please confirm your password.'); return false }
+      if (password !== confirmPassword)      { setError('Passwords do not match.'); return false }
+    }
     return true
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (cooldown > 0) return    // still in cooldown
-    setLoading(true)
+    if (cooldown > 0) return
 
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
-          graduation_year: gradYear ? parseInt(gradYear) : null,
-        },
-      },
-    })
-
-    if (signUpError) {
-      const msg = friendlyAuthError(signUpError.message)
-      setError(msg)
-      setLoading(false)
-      // Start a 60-second cooldown for rate-limit errors so the user can't keep hammering
-      if (signUpError.message.toLowerCase().includes('rate') ||
-          signUpError.message.toLowerCase().includes('429') ||
-          signUpError.message.toLowerCase().includes('too many')) {
-        startCooldown(60)
-      }
+    // Final validation before submit
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.')
       return
     }
 
-    // Use the user returned directly from signUp — don't call getUser() separately,
-    // as the session may not be established yet if email confirmation is required.
-    if (data.user) {
-      const parsedYear = gradYear ? parseInt(gradYear) : null
-      // Role is computed from graduation_year; the DB trigger will also enforce this.
-      const role = computeRole(parsedYear)
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        full_name: fullName,
-        graduation_year: parsedYear,
-        role,
-      })
+    setLoading(true)
+
+    // Use our server-side route that bypasses Supabase's shared email rate limit
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fullName,
+        email,
+        password,
+        graduationYear: gradYear || null,
+      }),
+    })
+
+    const json = await res.json()
+
+    if (!res.ok) {
+      setError(json.error ?? 'Something went wrong. Please try again.')
+      setLoading(false)
+      if (res.status === 429) startCooldown(60)
+      return
     }
 
-    // Fire welcome email (non-blocking — don't await so it never delays the redirect)
-    fetch('/api/notifications/welcome', { method: 'POST' }).catch(() => {})
+    // Account created — sign in immediately (user is auto-confirmed server-side)
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
-    // If Supabase issued a session immediately (email confirmation disabled) → go to feed.
-    // Otherwise the user needs to confirm their email first → send to login with a notice.
-    if (data.session) {
-      router.push('/feed')
-      router.refresh()
-    } else {
-      router.push('/login?notice=confirm-email')
+    if (signInError) {
+      // Edge case: account created but sign-in failed — send to login
+      router.push('/login?notice=account-created')
+      return
     }
+
+    router.push('/feed')
+    router.refresh()
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -180,14 +190,12 @@ export default function SignupPage() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
       style={{ background: 'var(--cc-surface)' }}>
 
-      {/* Logo */}
       <Link href="/" className="flex items-center gap-2.5 mb-10">
         <Image src="/cc-seal.png" alt="Central Catholic seal" width={36} height={36} />
         <span className="text-base font-bold" style={{ color: 'var(--cc-navy)' }}>Central Connect</span>
       </Link>
 
       <div className="w-full max-w-sm">
-
         {/* Progress bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -209,7 +217,7 @@ export default function SignupPage() {
 
         {/* Step card */}
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden"
-          style={{ borderColor: 'var(--cc-border)', minHeight: 340 }}>
+          style={{ borderColor: 'var(--cc-border)', minHeight: 360 }}>
 
           <form onSubmit={handleSubmit} onKeyDown={handleKeyDown}>
             <AnimatePresence mode="wait" custom={dir}>
@@ -223,25 +231,22 @@ export default function SignupPage() {
                 transition={{ duration: 0.22, ease: 'easeInOut' }}
                 className="px-7 pt-8 pb-7"
               >
-                {/* Step 0 — Name */}
+                {/* ── Step 0: Name ─────────────────────────────────── */}
                 {step === 0 && (
                   <div className="space-y-5">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-widest mb-2"
                         style={{ color: 'var(--cc-gold)' }}>Welcome, Viking</p>
                       <h2 className="text-xl font-bold" style={{ color: 'var(--cc-navy)' }}>
-                        What's your full name?
+                        What&apos;s your full name?
                       </h2>
                     </div>
-
-                    {/* Google shortcut */}
                     <GoogleButton label="Sign up with Google" variant="light" />
                     <div className="flex items-center gap-2">
                       <div className="flex-1 h-px" style={{ background: 'var(--cc-border)' }} />
                       <span className="text-[11px] font-medium" style={{ color: 'var(--cc-text-muted)' }}>or</span>
                       <div className="flex-1 h-px" style={{ background: 'var(--cc-border)' }} />
                     </div>
-
                     <input
                       ref={inputRef}
                       type="text"
@@ -254,14 +259,14 @@ export default function SignupPage() {
                   </div>
                 )}
 
-                {/* Step 1 — Email */}
+                {/* ── Step 1: Email ─────────────────────────────────── */}
                 {step === 1 && (
                   <div className="space-y-5">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-widest mb-2"
                         style={{ color: 'var(--cc-gold)' }}>Nice to meet you, {firstName}</p>
                       <h2 className="text-xl font-bold" style={{ color: 'var(--cc-navy)' }}>
-                        What's your email?
+                        What&apos;s your email?
                       </h2>
                     </div>
                     <input
@@ -275,14 +280,14 @@ export default function SignupPage() {
                       style={{ borderColor: 'var(--cc-border)' }}
                     />
                     <p className="text-xs" style={{ color: 'var(--cc-text-muted)' }}>
-                      We'll use this to sign you in. It won't be shared without your permission.
+                      We&apos;ll use this to sign you in. It won&apos;t be shared without your permission.
                     </p>
                   </div>
                 )}
 
-                {/* Step 2 — Password */}
+                {/* ── Step 2: Password + Confirm ────────────────────── */}
                 {step === 2 && (
-                  <div className="space-y-5">
+                  <div className="space-y-4">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-widest mb-2"
                         style={{ color: 'var(--cc-gold)' }}>Almost there</p>
@@ -290,24 +295,69 @@ export default function SignupPage() {
                         Create a password
                       </h2>
                     </div>
-                    <input
-                      ref={inputRef}
-                      type="password"
-                      value={password}
-                      onChange={e => { setPassword(e.target.value); setError('') }}
-                      placeholder="At least 6 characters"
-                      autoComplete="new-password"
-                      className="w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-navy)] transition-shadow"
-                      style={{ borderColor: 'var(--cc-border)' }}
-                    />
-                    {/* Password strength indicator */}
-                    {password.length > 0 && (
-                      <PasswordStrength password={password} />
-                    )}
+
+                    {/* Password */}
+                    <div>
+                      <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--cc-text-muted)' }}>
+                        Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          ref={inputRef}
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={e => { setPassword(e.target.value); setError('') }}
+                          placeholder="At least 6 characters"
+                          autoComplete="new-password"
+                          className="w-full border rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-navy)] transition-shadow"
+                          style={{ borderColor: 'var(--cc-border)' }}
+                        />
+                        <EyeButton visible={showPassword} onToggle={() => setShowPassword(v => !v)} />
+                      </div>
+                    </div>
+
+                    {/* Confirm password */}
+                    <div>
+                      <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--cc-text-muted)' }}>
+                        Confirm password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirm ? 'text' : 'password'}
+                          value={confirmPassword}
+                          onChange={e => { setConfirm(e.target.value); setError('') }}
+                          placeholder="Re-enter your password"
+                          autoComplete="new-password"
+                          className="w-full border rounded-xl px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-navy)] transition-shadow"
+                          style={{
+                            borderColor: confirmPassword && password !== confirmPassword
+                              ? '#dc2626'
+                              : confirmPassword && password === confirmPassword
+                                ? '#16a34a'
+                                : 'var(--cc-border)',
+                          }}
+                        />
+                        <EyeButton visible={showConfirm} onToggle={() => setShowConfirm(v => !v)} />
+                        {/* Match indicator */}
+                        {confirmPassword.length > 0 && (
+                          <span className="absolute right-9 top-1/2 -translate-y-1/2 text-base">
+                            {password === confirmPassword ? '✓' : '✗'}
+                          </span>
+                        )}
+                      </div>
+                      {confirmPassword && password !== confirmPassword && (
+                        <p className="text-xs mt-1 text-red-600">Passwords do not match.</p>
+                      )}
+                      {confirmPassword && password === confirmPassword && (
+                        <p className="text-xs mt-1" style={{ color: '#16a34a' }}>Passwords match.</p>
+                      )}
+                    </div>
+
+                    {password.length > 0 && <PasswordStrength password={password} />}
                   </div>
                 )}
 
-                {/* Step 3 — Grad year */}
+                {/* ── Step 3: Grad year ─────────────────────────────── */}
                 {step === 3 && (
                   <div className="space-y-5">
                     <div>
@@ -331,14 +381,13 @@ export default function SignupPage() {
                       className="w-full border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-navy)] transition-shadow"
                       style={{ borderColor: 'var(--cc-border)' }}
                     />
-                    {/* Live account-type preview */}
                     {gradYear && parseInt(gradYear) > 1940 && (
                       <GradYearPreview year={parseInt(gradYear)} />
                     )}
                   </div>
                 )}
 
-                {/* Error */}
+                {/* Error message */}
                 <AnimatePresence>
                   {error && (
                     <motion.p
@@ -354,7 +403,7 @@ export default function SignupPage() {
               </motion.div>
             </AnimatePresence>
 
-            {/* Navigation buttons */}
+            {/* Nav buttons */}
             <div className="px-7 pb-7 flex items-center gap-3">
               {step > 0 && (
                 <button
@@ -394,7 +443,6 @@ export default function SignupPage() {
           </form>
         </div>
 
-        {/* Sign in link */}
         <p className="text-center text-sm mt-6" style={{ color: 'var(--cc-text-muted)' }}>
           Already a member?{' '}
           <Link href="/login" className="font-semibold hover:underline" style={{ color: 'var(--cc-navy)' }}>
@@ -409,24 +457,21 @@ export default function SignupPage() {
 function GradYearPreview({ year }: { year: number }) {
   const role  = computeRole(year)
   const title = getClassTitle(year)
-
-  const isAlumni  = role === 'alumni'
-  const label     = isAlumni ? `Class of ${year} · Alumni` : title ? `Class of ${year} · ${title}` : `Class of ${year} · Student`
-  const bg        = isAlumni ? '#fef3c7' : '#dbeafe'
-  const color     = isAlumni ? '#92400e' : '#1e3a8a'
+  const isAlumni = role === 'alumni'
+  const label = isAlumni
+    ? `Class of ${year} · Alumni`
+    : title ? `Class of ${year} · ${title}` : `Class of ${year} · Student`
+  const bg    = isAlumni ? '#fef3c7' : '#dbeafe'
+  const color = isAlumni ? '#92400e' : '#1e3a8a'
 
   return (
-    <div
-      className="rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2"
-      style={{ background: bg, color }}
-    >
+    <div className="rounded-xl px-4 py-3 text-sm font-medium flex items-center gap-2"
+      style={{ background: bg, color }}>
       <span className="text-base">{isAlumni ? '🎓' : '📚'}</span>
       <div>
         <p className="font-semibold">{label}</p>
         <p className="text-xs font-normal opacity-75">
-          {isAlumni
-            ? 'You\'ll join as an Alumni member.'
-            : `You'll join as a ${title ?? 'Student'}.`}
+          {isAlumni ? "You'll join as an Alumni member." : `You'll join as a ${title ?? 'Student'}.`}
         </p>
       </div>
     </div>
@@ -440,10 +485,10 @@ function PasswordStrength({ password }: { password: string }) {
     /[0-9]/.test(password),
     /[^A-Za-z0-9]/.test(password),
   ]
-  const score   = checks.filter(Boolean).length
-  const label   = ['Too short', 'Weak', 'Fair', 'Good', 'Strong'][score]
-  const colors  = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a']
-  const color   = colors[score]
+  const score  = checks.filter(Boolean).length
+  const label  = ['Too short', 'Weak', 'Fair', 'Good', 'Strong'][score]
+  const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a']
+  const color  = colors[score]
 
   return (
     <div className="space-y-1.5">
