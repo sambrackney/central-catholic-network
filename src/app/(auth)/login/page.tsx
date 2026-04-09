@@ -11,6 +11,7 @@ function LoginForm() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const notice       = searchParams.get('notice')
+  const oauthError   = searchParams.get('error')
   const supabase     = createClient()
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -42,6 +43,16 @@ function LoginForm() {
             Sign in to your Central Connect account
           </p>
         </div>
+
+        {oauthError && (
+          <div className="mb-5 px-4 py-3 rounded-xl text-sm border"
+            style={{ background: '#fef2f2', borderColor: '#fecaca', color: '#991b1b' }}>
+            <p className="font-semibold mb-0.5">Sign-in failed</p>
+            <p className="text-xs" style={{ color: '#b91c1c' }}>
+              Something went wrong with Google sign-in. Please try again or use email and password.
+            </p>
+          </div>
+        )}
 
         {notice === 'confirm-email' && (
           <div className="mb-5 px-4 py-3 rounded-xl text-sm border"

@@ -32,7 +32,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const authRoutes = ['/login', '/signup']
-  const publicRoutes = ['/', '/about']
+  const publicRoutes = ['/', '/about', '/auth/callback']
   const isAuthRoute = authRoutes.includes(pathname)
   const isPublicRoute = publicRoutes.includes(pathname)
 
