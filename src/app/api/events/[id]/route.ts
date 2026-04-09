@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isValidUUID, isValidURL, LIMITS, sanitize } from '@/lib/validation'
 import { profanityError } from '@/lib/moderation'
+import type { Database } from '@/types/database.types'
+
+type EventType = Database['public']['Enums']['event_type']
 
 const ALLOWED_EVENT_TYPES = ['reunion', 'networking', 'fundraiser', 'webinar', 'other'] as const
 
@@ -84,9 +87,10 @@ export async function PATCH(
   const profanityErr = profanityError({ title, description, location })
   if (profanityErr) return NextResponse.json({ error: profanityErr }, { status: 422 })
 
+  // event_type is validated above against ALLOWED_EVENT_TYPES, safe to cast
   const { data, error } = await adminDb
     .from('events')
-    .update({ title, description, event_type, event_date, location, is_virtual, registration_url })
+    .update({ title, description, event_type: event_type as EventType, event_date, location, is_virtual, registration_url })
     .eq('id', id)
     .select()
     .single()
