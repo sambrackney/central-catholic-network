@@ -46,6 +46,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/feed', request.url))
   }
 
+  // Admin authorization is enforced in src/app/(main)/admin/layout.tsx
+  // (renders an "Access Required" UI for non-admins rather than a silent redirect)
+
   return supabaseResponse
 }
 

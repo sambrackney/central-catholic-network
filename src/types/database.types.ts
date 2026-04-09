@@ -537,6 +537,7 @@ export type Database = {
           privacy_contact_visible: boolean
           privacy_job_visible: boolean
           privacy_status_visible: boolean
+          role: Database["public"]["Enums"]["user_role"]
           title_company: string | null
           updated_at: string
         }
@@ -561,6 +562,7 @@ export type Database = {
           privacy_contact_visible?: boolean
           privacy_job_visible?: boolean
           privacy_status_visible?: boolean
+          role?: Database["public"]["Enums"]["user_role"]
           title_company?: string | null
           updated_at?: string
         }
@@ -585,6 +587,7 @@ export type Database = {
           privacy_contact_visible?: boolean
           privacy_job_visible?: boolean
           privacy_status_visible?: boolean
+          role?: Database["public"]["Enums"]["user_role"]
           title_company?: string | null
           updated_at?: string
         }
@@ -675,6 +678,7 @@ export type Database = {
         | "webinar"
       post_type: "update" | "article" | "photo" | "event"
       school_type: "high_school" | "college"
+      user_role: "admin" | "alumni" | "student" | "faculty"
       visibility_type: "public" | "alumni"
     }
     CompositeTypes: {
@@ -816,6 +820,7 @@ export const Constants = {
       ],
       post_type: ["update", "article", "photo", "event"],
       school_type: ["high_school", "college"],
+      user_role: ["admin", "alumni", "student", "faculty"],
       visibility_type: ["public", "alumni"],
     },
   },

@@ -7,6 +7,7 @@ import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import GoogleButton from '@/components/ui/GoogleButton'
+import { containsProfanity } from '@/lib/moderation'
 
 const STEPS = [
   { id: 'name',     label: 'Your name',     progress: 25  },
@@ -57,7 +58,10 @@ export default function SignupPage() {
   }
 
   function validate() {
-    if (step === 0 && !fullName.trim())    { setError('Please enter your full name.'); return false }
+    if (step === 0) {
+      if (!fullName.trim())                  { setError('Please enter your full name.'); return false }
+      if (containsProfanity(fullName))       { setError('Your name contains prohibited language.'); return false }
+    }
     if (step === 1) {
       if (!email.trim())                   { setError('Please enter your email.'); return false }
       if (!/\S+@\S+\.\S+/.test(email))    { setError('Please enter a valid email address.'); return false }

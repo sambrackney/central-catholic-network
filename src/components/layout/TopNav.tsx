@@ -9,6 +9,14 @@ import type { Database } from '@/types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
 
+function ShieldIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  )
+}
+
 export default function TopNav() {
   const router = useRouter()
   const pathname = usePathname()
@@ -40,6 +48,8 @@ export default function TopNav() {
     ? profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
     : '?'
 
+  const isAdmin = profile?.role === 'admin'
+
   const navLinks = [
     { href: '/feed', label: 'Home', icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -69,6 +79,7 @@ export default function TopNav() {
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
       </svg>
     )},
+    ...(isAdmin ? [{ href: '/admin', label: 'Admin', icon: <ShieldIcon /> }] : []),
   ]
 
   return (

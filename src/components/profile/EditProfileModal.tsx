@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { updateProfile } from '@/actions/profiles'
 import type { Database } from '@/types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -21,6 +22,7 @@ interface Props {
 export default function EditProfileModal({ profile, education, experience, skills, onClose, onSaved }: Props) {
   const supabase = createClient()
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   // Profile fields
   const [fullName, setFullName] = useState(profile.full_name)
@@ -58,9 +60,10 @@ export default function EditProfileModal({ profile, education, experience, skill
 
   async function handleSave() {
     setSaving(true)
+    setSaveError('')
 
-    // 1. Update profile table (DB-first)
-    await supabase.from('profiles').update({
+    // 1. Update profile table via server action (enforces content policy)
+    const result = await updateProfile({
       full_name: fullName,
       title_company: titleCompany,
       location,
@@ -76,7 +79,13 @@ export default function EditProfileModal({ profile, education, experience, skill
       linkedin_url: linkedinUrl,
       privacy_contact_visible: privacyContact,
       privacy_job_visible: privacyJob,
-    }).eq('id', profile.id)
+    })
+
+    if (result.error) {
+      setSaveError(result.error)
+      setSaving(false)
+      return
+    }
 
     // 2. Upsert college education
     if (collegeName.trim()) {
@@ -260,18 +269,25 @@ export default function EditProfileModal({ profile, education, experience, skill
               placeholder="https://linkedin.com/in/yourname" /></div>
         </div>
 
-        <div className="sticky bottom-0 bg-white border-t px-6 py-4 flex justify-end gap-3"
+        <div className="sticky bottom-0 bg-white border-t px-6 py-4 space-y-3"
           style={{ borderColor: 'var(--cc-border)' }}>
-          <button onClick={onClose}
-            className="px-4 py-2 text-sm rounded-lg border font-medium"
-            style={{ borderColor: 'var(--cc-border)' }}>
-            Cancel
-          </button>
-          <button onClick={handleSave} disabled={saving}
-            className="px-5 py-2 text-sm rounded-lg font-semibold text-white disabled:opacity-60"
-            style={{ background: 'var(--cc-navy)' }}>
-            {saving ? 'Saving…' : 'Save changes'}
-          </button>
+          {saveError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {saveError}
+            </p>
+          )}
+          <div className="flex justify-end gap-3">
+            <button onClick={onClose}
+              className="px-4 py-2 text-sm rounded-lg border font-medium"
+              style={{ borderColor: 'var(--cc-border)' }}>
+              Cancel
+            </button>
+            <button onClick={handleSave} disabled={saving}
+              className="px-5 py-2 text-sm rounded-lg font-semibold text-white disabled:opacity-60"
+              style={{ background: 'var(--cc-navy)' }}>
+              {saving ? 'Saving…' : 'Save changes'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

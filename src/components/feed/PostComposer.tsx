@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
+import { createPost } from '@/actions/posts'
 import type { Database } from '@/types/database.types'
 
 type Profile = Database['public']['Tables']['profiles']['Row']
@@ -13,10 +13,10 @@ interface Props {
 }
 
 export default function PostComposer({ profile, onPost }: Props) {
-  const supabase = createClient()
   const [open, setOpen] = useState(false)
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const initials = profile.full_name
     ? profile.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
@@ -26,12 +26,13 @@ export default function PostComposer({ profile, onPost }: Props) {
     e.preventDefault()
     if (!content.trim()) return
     setLoading(true)
-    await supabase.from('posts').insert({
-      author_id: profile.id,
-      content: content.trim(),
-      post_type: 'update',
-      visibility: 'alumni',
-    })
+    setError('')
+    const result = await createPost(content)
+    if (result.error) {
+      setError(result.error)
+      setLoading(false)
+      return
+    }
     setContent('')
     setOpen(false)
     setLoading(false)
@@ -84,13 +85,18 @@ export default function PostComposer({ profile, onPost }: Props) {
             <form onSubmit={handleSubmit}>
               <textarea
                 value={content}
-                onChange={e => setContent(e.target.value)}
+                onChange={e => { setContent(e.target.value); setError('') }}
                 rows={5}
                 autoFocus
                 placeholder="Internship highlights, new role, grad school, certifications, volunteer work…"
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-gold)] resize-none"
                 style={{ borderColor: 'var(--cc-border)' }}
               />
+              {error && (
+                <p className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {error}
+                </p>
+              )}
               <div className="flex justify-end gap-2 mt-3">
                 <button type="button" onClick={() => setOpen(false)}
                   className="px-4 py-2 text-sm rounded-lg border font-medium"

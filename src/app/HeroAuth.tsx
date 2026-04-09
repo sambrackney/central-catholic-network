@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import GoogleButton from '@/components/ui/GoogleButton'
+import { containsProfanity } from '@/lib/moderation'
 
 type Tab = 'signin' | 'signup'
 
@@ -36,6 +37,10 @@ export default function HeroAuth() {
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+    if (containsProfanity(suName)) {
+      setError('Your name contains prohibited language.')
+      return
+    }
     setLoading(true)
     const { error } = await supabase.auth.signUp({
       email: suEmail,
