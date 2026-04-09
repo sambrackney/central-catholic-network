@@ -3,6 +3,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isValidUUID, isValidURL, LIMITS, sanitize } from '@/lib/validation'
 import { profanityError } from '@/lib/moderation'
+import type { Database } from '@/types/database.types'
+
+type OppType = Database['public']['Enums']['opportunity_type']
 
 const ALLOWED_OPP_TYPES = ['internship', 'full_time', 'part_time', 'networking_event', 'webinar'] as const
 
@@ -127,7 +130,7 @@ export async function PATCH(
 
   const { data, error } = await adminDb
     .from('opportunities')
-    .update({ type, title, company, description, location, url, expires_at, is_remote })
+    .update({ type: type as OppType, title, company, description, location, url, expires_at, is_remote })
     .eq('id', id)
     .select()
     .single()
