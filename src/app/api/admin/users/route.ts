@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendEmail } from '@/lib/email'
-import { passwordResetEmail } from '@/lib/email-templates'
 import type { Database } from '@/types/database.types'
 
 type UserRole = Database['public']['Enums']['user_role']
@@ -66,7 +64,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'User not found or has no email' }, { status: 404 })
   }
 
-  const { data: linkData, error } = await adminDb.auth.admin.generateLink({
+  const { error } = await adminDb.auth.admin.generateLink({
     type: 'recovery',
     email: authUser.user.email,
     options: {
@@ -74,19 +72,8 @@ export async function POST(request: NextRequest) {
     },
   })
 
-  if (error || !linkData?.properties?.action_link) {
-    return NextResponse.json({ error: error?.message ?? 'Failed to generate reset link' }, { status: 500 })
-  }
-
-  // Send the reset link via Resend so it actually reaches the user
-  const { error: emailError } = await sendEmail({
-    to: authUser.user.email,
-    subject: 'Reset your Central Connect password',
-    html: passwordResetEmail({ resetUrl: linkData.properties.action_link }),
-  })
-
-  if (emailError) {
-    return NextResponse.json({ error: 'Generated link but failed to send email.' }, { status: 500 })
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })
