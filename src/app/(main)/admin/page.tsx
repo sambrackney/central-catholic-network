@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import AdminClient from './AdminClient'
@@ -10,7 +11,18 @@ export default async function AdminPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  if (!user) redirect('/login')
+
   const adminDb = createAdminClient()
+
+  // Verify the caller is actually an admin before serving any data
+  const { data: callerProfile } = await adminDb
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!callerProfile || callerProfile.role !== 'admin') redirect('/feed')
 
   // Fetch all profiles for the users table
   const { data: profiles } = await adminDb
@@ -82,7 +94,7 @@ export default async function AdminPage() {
         </div>
         <span
           className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide"
-          style={{ background: 'var(--cc-primary)', color: 'white' }}
+          style={{ background: 'var(--cc-navy)', color: 'white' }}
         >
           Administrator
         </span>
