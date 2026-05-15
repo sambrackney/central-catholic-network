@@ -1,12 +1,7 @@
 import { Resend } from 'resend'
 
-// Lazy singleton — only created when sendEmail is actually called at runtime,
-// never at module import/build time (which would throw with no env var).
-let _resend: Resend | null = null
-function getResend(): Resend {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY!)
-  return _resend
-}
+// Only instantiate on the server — never import this in client components
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export const FROM_ADDRESS = 'Central Connect <no-reply@mail.centralcatholichsconnect.com>'
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://centralcatholichsconnect.com'
@@ -29,7 +24,7 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
   }
 
   try {
-    const { error } = await getResend().emails.send({
+    const { error } = await resend.emails.send({
       from: FROM_ADDRESS,
       to: payload.to,
       subject: payload.subject,
