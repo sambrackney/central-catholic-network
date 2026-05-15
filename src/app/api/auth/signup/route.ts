@@ -47,7 +47,15 @@ export async function POST(request: NextRequest) {
   const profanityErr = profanityError({ name: fullName })
   if (profanityErr) return NextResponse.json({ error: profanityErr }, { status: 422 })
 
-  const adminDb = createAdminClient()
+  let adminDb: ReturnType<typeof createAdminClient>
+  try {
+    adminDb = createAdminClient()
+  } catch {
+    return NextResponse.json(
+      { error: 'Server configuration error. Please contact support.' },
+      { status: 500 }
+    )
+  }
 
   // ── Create the user without triggering any Supabase email ─────────────
   const { data, error: createError } = await adminDb.auth.admin.createUser({
