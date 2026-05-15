@@ -134,7 +134,6 @@ export default function SignupPage() {
     setError('')
     if (cooldown > 0) return
 
-    // Final validation before submit
     if (password !== confirmPassword) {
       setError('Passwords do not match.')
       return
@@ -142,38 +141,42 @@ export default function SignupPage() {
 
     setLoading(true)
 
-    // Use our server-side route that bypasses Supabase's shared email rate limit
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        fullName,
-        email,
-        password,
-        graduationYear: gradYear || null,
-      }),
-    })
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName,
+          email,
+          password,
+          graduationYear: gradYear || null,
+        }),
+      })
 
-    const json = await res.json()
+      let json: { error?: string; success?: boolean } = {}
+      try { json = await res.json() } catch { /* non-JSON error body */ }
 
-    if (!res.ok) {
-      setError(json.error ?? 'Something went wrong. Please try again.')
+      if (!res.ok) {
+        setError(json.error ?? 'Something went wrong. Please try again.')
+        if (res.status === 429) startCooldown(60)
+        return
+      }
+
+      // Account created — sign in immediately (user is auto-confirmed server-side)
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+
+      if (signInError) {
+        router.push('/login?notice=account-created')
+        return
+      }
+
+      router.push('/feed')
+      router.refresh()
+    } catch {
+      setError('Network error. Please check your connection and try again.')
+    } finally {
       setLoading(false)
-      if (res.status === 429) startCooldown(60)
-      return
     }
-
-    // Account created — sign in immediately (user is auto-confirmed server-side)
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (signInError) {
-      // Edge case: account created but sign-in failed — send to login
-      router.push('/login?notice=account-created')
-      return
-    }
-
-    router.push('/feed')
-    router.refresh()
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
