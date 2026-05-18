@@ -167,14 +167,14 @@ function CollegeAutocomplete({
   }, [])
 
   const domain = website.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
-  const isSelected = !!domain && !!name.trim()
+  const isSelected = !!name.trim()
 
   // ── Selected state: show logo + name inline, with a change button ──────
   if (isSelected) {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border"
         style={{ borderColor: 'var(--cc-border)', background: 'var(--cc-surface)' }}>
-        {!logoFailed ? (
+        {domain && !logoFailed ? (
           <img
             src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
             alt={name}
@@ -205,6 +205,8 @@ function CollegeAutocomplete({
   }
 
   // ── Unselected state: search input + dropdown ────────────────────────
+  const showDropdown = open && (suggestions.length > 0 || query.trim())
+
   return (
     <div ref={containerRef}>
       <div className="relative">
@@ -216,14 +218,13 @@ function CollegeAutocomplete({
           placeholder="Search for a college or university…"
           className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-gold)]"
           style={{ borderColor: 'var(--cc-border)' }}
-          autoFocus={false}
         />
         {searching && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--cc-text-muted)' }}>
             Searching…
           </span>
         )}
-        {open && suggestions.length > 0 && (
+        {showDropdown && (
           <ul
             className="absolute z-50 left-0 right-0 mt-1 rounded-lg border shadow-lg overflow-y-auto"
             style={{ background: 'white', borderColor: 'var(--cc-border)', maxHeight: 280 }}
@@ -237,6 +238,25 @@ function CollegeAutocomplete({
             {suggestions.map(uni => (
               <SuggestionRow key={uni.domain} uni={uni} onPick={pick} />
             ))}
+            {query.trim() && (
+              <li className="border-t" style={{ borderColor: 'var(--cc-border)' }}>
+                <button
+                  type="button"
+                  onMouseDown={() => pick({ name: query.trim(), domain: '' })}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors"
+                >
+                  <span
+                    className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                    style={{ background: 'var(--cc-gold)' }}
+                  >
+                    +
+                  </span>
+                  <span style={{ color: 'var(--cc-text-muted)' }}>
+                    Add &ldquo;<span className="font-medium" style={{ color: 'var(--cc-navy)' }}>{query.trim()}</span>&rdquo;
+                  </span>
+                </button>
+              </li>
+            )}
           </ul>
         )}
       </div>
