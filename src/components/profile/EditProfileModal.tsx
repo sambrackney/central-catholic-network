@@ -22,6 +22,50 @@ interface Props {
 
 type UniResult = { name: string; domain: string }
 
+// Shown immediately when the field is focused with no query typed yet
+const POPULAR_UNIVERSITIES: UniResult[] = [
+  { name: 'University of Pittsburgh', domain: 'pitt.edu' },
+  { name: 'Carnegie Mellon University', domain: 'cmu.edu' },
+  { name: 'Duquesne University', domain: 'duq.edu' },
+  { name: 'Point Park University', domain: 'pointpark.edu' },
+  { name: 'Chatham University', domain: 'chatham.edu' },
+  { name: 'Penn State University', domain: 'psu.edu' },
+  { name: 'University of Pennsylvania', domain: 'upenn.edu' },
+  { name: 'Temple University', domain: 'temple.edu' },
+  { name: 'Villanova University', domain: 'villanova.edu' },
+  { name: 'Drexel University', domain: 'drexel.edu' },
+  { name: 'La Salle University', domain: 'lasalle.edu' },
+  { name: 'Saint Joseph\'s University', domain: 'sju.edu' },
+  { name: 'University of Notre Dame', domain: 'nd.edu' },
+  { name: 'Georgetown University', domain: 'georgetown.edu' },
+  { name: 'Boston College', domain: 'bc.edu' },
+  { name: 'Fordham University', domain: 'fordham.edu' },
+  { name: 'Loyola University Chicago', domain: 'luc.edu' },
+  { name: 'Marquette University', domain: 'marquette.edu' },
+  { name: 'University of Dayton', domain: 'udayton.edu' },
+  { name: 'Ohio State University', domain: 'osu.edu' },
+  { name: 'University of Michigan', domain: 'umich.edu' },
+  { name: 'Indiana University', domain: 'indiana.edu' },
+  { name: 'Purdue University', domain: 'purdue.edu' },
+  { name: 'West Virginia University', domain: 'wvu.edu' },
+  { name: 'Harvard University', domain: 'harvard.edu' },
+  { name: 'Yale University', domain: 'yale.edu' },
+  { name: 'Princeton University', domain: 'princeton.edu' },
+  { name: 'Columbia University', domain: 'columbia.edu' },
+  { name: 'New York University', domain: 'nyu.edu' },
+  { name: 'Duke University', domain: 'duke.edu' },
+  { name: 'Vanderbilt University', domain: 'vanderbilt.edu' },
+  { name: 'Emory University', domain: 'emory.edu' },
+  { name: 'University of Virginia', domain: 'virginia.edu' },
+  { name: 'University of North Carolina', domain: 'unc.edu' },
+  { name: 'Georgia Institute of Technology', domain: 'gatech.edu' },
+  { name: 'University of Florida', domain: 'ufl.edu' },
+  { name: 'University of Southern California', domain: 'usc.edu' },
+  { name: 'UCLA', domain: 'ucla.edu' },
+  { name: 'UC Berkeley', domain: 'berkeley.edu' },
+  { name: 'Stanford University', domain: 'stanford.edu' },
+]
+
 function CollegeAutocomplete({
   name,
   website,
@@ -35,6 +79,7 @@ function CollegeAutocomplete({
   const [suggestions, setSuggestions] = useState<UniResult[]>([])
   const [open, setOpen] = useState(false)
   const [logoFailed, setLogoFailed] = useState(false)
+  const [searching, setSearching] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -50,26 +95,48 @@ function CollegeAutocomplete({
   // Keep query in sync if parent resets the value
   useEffect(() => { setQuery(name) }, [name])
 
+  function handleFocus() {
+    if (!query.trim()) {
+      setSuggestions(POPULAR_UNIVERSITIES)
+    }
+    setOpen(true)
+  }
+
   function handleChange(value: string) {
     setQuery(value)
     setLogoFailed(false)
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    if (!value.trim()) { setSuggestions([]); setOpen(false); return }
+
+    if (!value.trim()) {
+      setSuggestions(POPULAR_UNIVERSITIES)
+      setOpen(true)
+      setSearching(false)
+      return
+    }
+
+    // Instant client-side filter of popular list while API loads
+    const local = POPULAR_UNIVERSITIES.filter(u =>
+      u.name.toLowerCase().includes(value.toLowerCase())
+    )
+    setSuggestions(local)
+    setOpen(true)
+    setSearching(true)
 
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `https://universities.hipolabs.com/search?name=${encodeURIComponent(value)}&limit=8`
+          `https://universities.hipolabs.com/search?name=${encodeURIComponent(value)}&limit=20`
         )
         if (!res.ok) return
         const data: Array<{ name: string; domains: string[] }> = await res.json()
         const results = data
           .filter(u => u.domains?.[0])
           .map(u => ({ name: u.name, domain: u.domains[0] }))
-          .slice(0, 7)
-        setSuggestions(results)
-        setOpen(results.length > 0)
-      } catch { /* network failure — just hide suggestions */ }
+          .slice(0, 12)
+        setSuggestions(results.length > 0 ? results : local)
+        setOpen(true)
+      } catch { /* keep local results on network failure */ }
+      finally { setSearching(false) }
     }, 350)
   }
 
@@ -101,16 +168,27 @@ function CollegeAutocomplete({
           type="text"
           value={query}
           onChange={e => handleChange(e.target.value)}
-          onFocus={() => suggestions.length > 0 && setOpen(true)}
-          placeholder="Start typing a university name…"
+          onFocus={handleFocus}
+          placeholder="Search for a college or university…"
           className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-gold)]"
           style={{ borderColor: 'var(--cc-border)' }}
         />
-        {open && (
+        {searching && (
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--cc-text-muted)' }}>
+            Searching…
+          </span>
+        )}
+        {open && suggestions.length > 0 && (
           <ul
-            className="absolute z-50 left-0 right-0 mt-1 rounded-lg border shadow-lg overflow-hidden"
-            style={{ background: 'white', borderColor: 'var(--cc-border)' }}
+            className="absolute z-50 left-0 right-0 mt-1 rounded-lg border shadow-lg overflow-y-auto"
+            style={{ background: 'white', borderColor: 'var(--cc-border)', maxHeight: 280 }}
           >
+            {!query.trim() && (
+              <li className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide"
+                style={{ color: 'var(--cc-text-muted)', background: 'var(--cc-surface)' }}>
+                Popular universities
+              </li>
+            )}
             {suggestions.map(uni => (
               <SuggestionRow key={uni.domain} uni={uni} onPick={pick} />
             ))}
