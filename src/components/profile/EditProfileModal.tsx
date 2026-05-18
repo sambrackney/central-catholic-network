@@ -147,6 +147,14 @@ function CollegeAutocomplete({
     onSelect(uni.name, uni.domain)
   }
 
+  function clear() {
+    setQuery('')
+    setLogoFailed(false)
+    setSuggestions(POPULAR_UNIVERSITIES)
+    onSelect('', '')
+    setOpen(true)
+  }
+
   // Close dropdown on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
@@ -159,10 +167,46 @@ function CollegeAutocomplete({
   }, [])
 
   const domain = website.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
-  const showLogo = !!domain && !!name.trim() && !logoFailed
+  const isSelected = !!domain && !!name.trim()
 
+  // ── Selected state: show logo + name inline, with a change button ──────
+  if (isSelected) {
+    return (
+      <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border"
+        style={{ borderColor: 'var(--cc-border)', background: 'var(--cc-surface)' }}>
+        {!logoFailed ? (
+          <img
+            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+            alt={name}
+            width={40}
+            height={40}
+            className="rounded object-contain bg-white shrink-0"
+            onError={() => setLogoFailed(true)}
+          />
+        ) : (
+          <span
+            className="w-10 h-10 rounded flex items-center justify-center text-sm font-bold text-white shrink-0"
+            style={{ background: 'var(--cc-navy)' }}
+          >
+            {name[0]?.toUpperCase()}
+          </span>
+        )}
+        <span className="text-sm font-medium flex-1" style={{ color: 'var(--cc-navy)' }}>{name}</span>
+        <button
+          type="button"
+          onClick={clear}
+          className="text-xs px-2 py-1 rounded border font-medium shrink-0 hover:bg-gray-50 transition-colors"
+          style={{ borderColor: 'var(--cc-border)', color: 'var(--cc-text-muted)' }}
+        >
+          Change
+        </button>
+      </div>
+    )
+  }
+
+  // ── Unselected state: search input + dropdown ────────────────────────
   return (
-    <div ref={containerRef} className="space-y-2">
+    <div ref={containerRef}>
       <div className="relative">
         <input
           type="text"
@@ -172,6 +216,7 @@ function CollegeAutocomplete({
           placeholder="Search for a college or university…"
           className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-gold)]"
           style={{ borderColor: 'var(--cc-border)' }}
+          autoFocus={false}
         />
         {searching && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--cc-text-muted)' }}>
@@ -195,23 +240,6 @@ function CollegeAutocomplete({
           </ul>
         )}
       </div>
-
-      {showLogo && (
-        <div
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border"
-          style={{ borderColor: 'var(--cc-border)', background: 'var(--cc-surface)' }}
-        >
-          <img
-            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
-            alt={name}
-            width={36}
-            height={36}
-            className="rounded object-contain bg-white shrink-0"
-            onError={() => setLogoFailed(true)}
-          />
-          <span className="text-sm font-medium" style={{ color: 'var(--cc-navy)' }}>{name}</span>
-        </div>
-      )}
     </div>
   )
 }
