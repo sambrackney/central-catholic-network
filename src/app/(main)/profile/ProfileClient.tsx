@@ -29,7 +29,7 @@ function CollegeLogo({ name, website }: { name: string; website: string | null }
 
   return (
     <img
-      src={`https://logo.clearbit.com/${domain}`}
+      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
       alt={name}
       width={44}
       height={44}

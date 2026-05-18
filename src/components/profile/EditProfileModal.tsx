@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { updateProfile } from '@/actions/profiles'
 import type { Database } from '@/types/database.types'
@@ -18,6 +18,157 @@ interface Props {
   skills: Skill[]
   onClose: () => void
   onSaved: () => void
+}
+
+type UniResult = { name: string; domain: string }
+
+function CollegeAutocomplete({
+  name,
+  website,
+  onSelect,
+}: {
+  name: string
+  website: string
+  onSelect: (name: string, domain: string) => void
+}) {
+  const [query, setQuery] = useState(name)
+  const [suggestions, setSuggestions] = useState<UniResult[]>([])
+  const [open, setOpen] = useState(false)
+  const [logoFailed, setLogoFailed] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Reset logo error when domain changes
+  const prevDomain = useRef(website)
+  useEffect(() => {
+    if (website !== prevDomain.current) {
+      setLogoFailed(false)
+      prevDomain.current = website
+    }
+  }, [website])
+
+  // Keep query in sync if parent resets the value
+  useEffect(() => { setQuery(name) }, [name])
+
+  function handleChange(value: string) {
+    setQuery(value)
+    setLogoFailed(false)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!value.trim()) { setSuggestions([]); setOpen(false); return }
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://universities.hipolabs.com/search?name=${encodeURIComponent(value)}&limit=8`
+        )
+        if (!res.ok) return
+        const data: Array<{ name: string; domains: string[] }> = await res.json()
+        const results = data
+          .filter(u => u.domains?.[0])
+          .map(u => ({ name: u.name, domain: u.domains[0] }))
+          .slice(0, 7)
+        setSuggestions(results)
+        setOpen(results.length > 0)
+      } catch { /* network failure — just hide suggestions */ }
+    }, 350)
+  }
+
+  function pick(uni: UniResult) {
+    setQuery(uni.name)
+    setOpen(false)
+    setSuggestions([])
+    onSelect(uni.name, uni.domain)
+  }
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const domain = website.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+  const showLogo = !!domain && !!name.trim() && !logoFailed
+
+  return (
+    <div ref={containerRef} className="space-y-2">
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={e => handleChange(e.target.value)}
+          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          placeholder="Start typing a university name…"
+          className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--cc-gold)]"
+          style={{ borderColor: 'var(--cc-border)' }}
+        />
+        {open && (
+          <ul
+            className="absolute z-50 left-0 right-0 mt-1 rounded-lg border shadow-lg overflow-hidden"
+            style={{ background: 'white', borderColor: 'var(--cc-border)' }}
+          >
+            {suggestions.map(uni => (
+              <SuggestionRow key={uni.domain} uni={uni} onPick={pick} />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {showLogo && (
+        <div
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg border"
+          style={{ borderColor: 'var(--cc-border)', background: 'var(--cc-surface)' }}
+        >
+          <img
+            src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+            alt={name}
+            width={36}
+            height={36}
+            className="rounded object-contain bg-white shrink-0"
+            onError={() => setLogoFailed(true)}
+          />
+          <span className="text-sm font-medium" style={{ color: 'var(--cc-navy)' }}>{name}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SuggestionRow({ uni, onPick }: { uni: UniResult; onPick: (u: UniResult) => void }) {
+  const [imgFailed, setImgFailed] = useState(false)
+  return (
+    <li>
+      <button
+        type="button"
+        onMouseDown={() => onPick(uni)}
+        className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors"
+      >
+        {!imgFailed ? (
+          <img
+            src={`https://www.google.com/s2/favicons?domain=${uni.domain}&sz=32`}
+            alt=""
+            width={20}
+            height={20}
+            className="rounded object-contain bg-white shrink-0"
+            onError={() => setImgFailed(true)}
+          />
+        ) : (
+          <span
+            className="w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+            style={{ background: 'var(--cc-navy)' }}
+          >
+            {uni.name[0]}
+          </span>
+        )}
+        <span style={{ color: 'var(--cc-text)' }}>{uni.name}</span>
+        <span className="ml-auto text-xs" style={{ color: 'var(--cc-text-muted)' }}>{uni.domain}</span>
+      </button>
+    </li>
+  )
 }
 
 export default function EditProfileModal({ profile, education, experience, skills, onClose, onSaved }: Props) {
@@ -240,12 +391,14 @@ export default function EditProfileModal({ profile, education, experience, skill
               className={inputClass} style={{ borderColor: 'var(--cc-border)' }} /></div>
 
           <p className="text-sm font-medium pt-2" style={{ color: 'var(--cc-navy)' }}>College / University</p>
-          <div><label className={labelClass}>Institution name</label>
-            <input type="text" value={collegeName} onChange={e => setCollegeName(e.target.value)}
-              className={inputClass} style={{ borderColor: 'var(--cc-border)' }} /></div>
-          <div><label className={labelClass}>Website (for logo)</label>
-            <input type="text" value={collegeWebsite} onChange={e => setCollegeWebsite(e.target.value)}
-              className={inputClass} style={{ borderColor: 'var(--cc-border)' }} placeholder="e.g. pitt.edu" /></div>
+          <div>
+            <label className={labelClass}>Institution name</label>
+            <CollegeAutocomplete
+              name={collegeName}
+              website={collegeWebsite}
+              onSelect={(name, domain) => { setCollegeName(name); setCollegeWebsite(domain) }}
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className={labelClass}>Degree</label>
               <input type="text" value={collegeDegree} onChange={e => setCollegeDegree(e.target.value)}
